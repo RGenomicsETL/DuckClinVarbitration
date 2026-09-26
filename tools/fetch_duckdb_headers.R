@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Fetch and repair the exact DuckDB C API headers used by the RClinVarbitration extension.
+# Fetch and repair the exact DuckDB C API headers used by duckclinvarbitration.
 #
 # This is an explicit vendoring tool, not an install-time network step.
 # Usage:
@@ -7,8 +7,8 @@
 #   Rscript tools/fetch_duckdb_headers.R --repo /path/to/duckdb --ref v1.5.5
 #
 # Unless --dest is supplied, each exact version is written below
-# tools/ext/duckdb_capi/<ref>/. Keep tools/ext/duckdb_capi/versions.txt in sync
-# with the exact versions that configure should build.
+# duckdb_capi/<ref>/. Keep duckdb_capi/versions.txt in sync with the
+# exact versions that the R front end should build.
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -33,7 +33,7 @@ cmd <- commandArgs(trailingOnly = FALSE)
 file_arg <- grep("^--file=", cmd, value = TRUE)
 script_file <- if (length(file_arg)) sub("^--file=", "", file_arg[[1L]]) else "tools/fetch_duckdb_headers.R"
 repo_root <- normalizePath(dirname(dirname(script_file)), mustWork = FALSE)
-if (!file.exists(file.path(repo_root, "DESCRIPTION"))) {
+if (!file.exists(file.path(repo_root, "duckdb_capi", "versions.txt"))) {
   repo_root <- normalizePath(getwd(), mustWork = TRUE)
 }
 
@@ -46,7 +46,7 @@ dest_opt <- opts[["dest"]] %||% ""
 dest <- if (nzchar(dest_opt)) {
   dest_opt
 } else {
-  file.path(repo_root, "tools", "ext", "duckdb_capi", ref)
+  file.path(repo_root, "duckdb_capi", ref)
 }
 source_repo <- opts[["repo"]] %||% ""
 

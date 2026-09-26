@@ -1,0 +1,11 @@
+{
+  "name": "duckclinvarbitration",
+  "version-string": "0.1.1.9000",
+  "dependencies": [
+    {
+      "name": "libxml2",
+      "default-features": false
+    },
+    "zlib"
+  ]
+}

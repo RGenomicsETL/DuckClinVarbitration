@@ -3,7 +3,7 @@
   "source": "https://github.com/duckdb/duckdb",
   "headers": {
     "duckdb.h": {
-      "path": "tools/ext/duckdb_capi/v1.5.3/duckdb.h",
+      "path": "duckdb_capi/v1.5.3/duckdb.h",
       "md5": "027593fdc62c40ebd2b6a09b1155d806",
       "repairs": {
       "duckdb_create_instance_cache": 1,
@@ -22,7 +22,7 @@
       }
     },
     "duckdb_extension.h": {
-      "path": "tools/ext/duckdb_capi/v1.5.3/duckdb_extension.h",
+      "path": "duckdb_capi/v1.5.3/duckdb_extension.h",
       "md5": "0bfe567da51753fcf4ebb36f7dd781af",
       "repairs": {
       "duckdb_library_version": 1,

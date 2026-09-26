@@ -1,0 +1,23 @@
+# name: test/sql/clinvar_xml.test
+# group: [duckclinvarbitration]
+
+require duckclinvarbitration
+
+query III
+SELECT count(*) FILTER (WHERE entity_type = 'variation'),
+       count(*) FILTER (WHERE entity_type = 'rcv_assertion'),
+       count(*) FILTER (WHERE entity_type = 'scv_assertion')
+FROM clinvar_xml_entities('__WORKING_DIRECTORY__/r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz');
+----
+1	4	6
+
+query T
+SELECT DISTINCT vcv_accession
+FROM clinvar_xml_entities('__WORKING_DIRECTORY__/r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz');
+----
+VCV000091629
+
+query T
+SELECT rclinvar_json_field('{"value":"hello"}', 'value');
+----
+hello

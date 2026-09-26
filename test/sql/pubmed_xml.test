@@ -1,0 +1,25 @@
+# name: test/sql/pubmed_xml.test
+# group: [duckclinvarbitration]
+
+require duckclinvarbitration
+
+query I
+SELECT count(*) FROM rclinvarbitration_pubmed_xml_rows(
+  '__WORKING_DIRECTORY__/r/RClinVarbitration/inst/extdata/pubmed_baseline_fixture.xml')
+WHERE entity_type = 'article';
+----
+1
+
+query T
+SELECT article_title FROM rclinvarbitration_pubmed_xml_rows(
+  '__WORKING_DIRECTORY__/r/RClinVarbitration/inst/extdata/pubmed_baseline_fixture.xml')
+WHERE entity_type = 'article';
+----
+Baseline article title
+
+query I
+SELECT count(*) FROM rclinvarbitration_pubmed_xml_rows(
+  '__WORKING_DIRECTORY__/r/RClinVarbitration/inst/extdata/pubmed_delete_fixture.xml')
+WHERE is_deleted;
+----
+2
