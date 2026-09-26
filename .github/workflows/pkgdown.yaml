@@ -36,8 +36,13 @@ jobs:
         with:
           use-public-rspm: true
 
+      - name: Stage native sources
+        working-directory: r/RClinVarbitration
+        run: Rscript bootstrap.R ../..
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          working-directory: r/RClinVarbitration
           extra-packages: >-
             any::pkgdown,
             any::duckdb,
@@ -46,11 +51,10 @@ jobs:
           dependencies: '"hard"'
 
       - name: Build site
+        working-directory: r/RClinVarbitration
         run: |
-          # docs/ERRATA.* are tracked audit sources, not an existing pkgdown site.
-          # The deployment checkout is disposable; clean it explicitly before build.
-          pkgdown::clean_site(force = TRUE)
-          pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+          pkgdown::build_site(override = list(destination = '../../docs'),
+                              new_process = FALSE, install = FALSE)
         shell: Rscript {0}
 
       - name: Deploy site

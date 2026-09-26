@@ -52,8 +52,13 @@ jobs:
           r-version: ${{ matrix.config.r }}
           use-public-rspm: true
 
+      - name: Stage native sources
+        working-directory: r/RClinVarbitration
+        run: Rscript bootstrap.R ../..
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          working-directory: r/RClinVarbitration
           extra-packages: >-
             any::rcmdcheck,
             any::knitr,
@@ -66,4 +71,5 @@ jobs:
           dependencies: '"hard"'
 
       - name: Check package
+        working-directory: r/RClinVarbitration
         run: make check

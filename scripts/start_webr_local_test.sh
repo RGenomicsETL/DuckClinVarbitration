@@ -11,17 +11,18 @@ PACKAGE=RClinVarbitration
 mkdir -p "${ARTIFACT_ROOT}"
 
 echo "Building ${PACKAGE} webR artifact with ${WEBR_IMAGE}..."
-docker run --rm -v "${ROOT_DIR}:/work/${PACKAGE}" -w "/work/${PACKAGE}" "${WEBR_IMAGE}" bash -lc '
+docker run --rm -v "${ROOT_DIR}:/work" -w "/work/r/${PACKAGE}" "${WEBR_IMAGE}" bash -lc '
 set -eu
-rm -rf RClinVarbitration.Rcheck ..Rcheck README.html inst/rclinvarbitration_extension/build
+Rscript bootstrap.R ../..
+rm -rf RClinVarbitration.Rcheck README.html inst/ext/build
 R CMD build --no-build-vignettes .
 Rscript -e "if (!requireNamespace(\"pak\", quietly = TRUE)) install.packages(\"pak\", repos = \"https://repo.r-wasm.org/\")"
 Rscript -e "pak::pak(\"r-wasm/rwasm\", ask = FALSE)"
 Rscript -e "version <- read.dcf(\"DESCRIPTION\")[1, \"Version\"]; rwasm::build(sprintf(\"./RClinVarbitration_%s.tar.gz\", version))"
 '
 
-VERSION=$(Rscript -e 'cat(read.dcf("DESCRIPTION")[1, "Version"])')
-TGZ_SOURCE="${ROOT_DIR}/${PACKAGE}_${VERSION}.tgz"
+VERSION=$(Rscript -e "cat(read.dcf('${ROOT_DIR}/r/${PACKAGE}/DESCRIPTION')[1, 'Version'])")
+TGZ_SOURCE="${ROOT_DIR}/r/${PACKAGE}/${PACKAGE}_${VERSION}.tgz"
 TGZ_PATH="${ARTIFACT_ROOT}/${PACKAGE}_${VERSION}.tgz"
 REPO_ROOT="${ARTIFACT_ROOT}/repo"
 SITE_ROOT="${ARTIFACT_ROOT}/site"
@@ -40,11 +41,11 @@ mkdir -p "${LOCAL_REPO_DIR}" "${BINARY_REPO_DIR}" "${SITE_ROOT}/r/${PACKAGE}" "$
 cp -f "${TGZ_SOURCE}" "${TGZ_PATH}"
 cp -f "${TGZ_PATH}" "${LOCAL_REPO_DIR}/"
 cp -f "${TGZ_PATH}" "${BINARY_REPO_DIR}/"
-cp -f "${ROOT_DIR}/DESCRIPTION" "${SITE_ROOT}/r/${PACKAGE}/DESCRIPTION"
+cp -f "${ROOT_DIR}/r/${PACKAGE}/DESCRIPTION" "${SITE_ROOT}/r/${PACKAGE}/DESCRIPTION"
 cp -f "${ROOT_DIR}/scripts/webr-local-test.html" "${SITE_ROOT}/scripts/webr-local-test.html"
 
-RCLINVAR_VERSION="${VERSION}" RCLINVAR_REPO_ROOT="${REPO_ROOT}" RCLINVAR_WEBR_R_SERIES="${WEBR_R_SERIES}" Rscript - <<'RS'
-desc <- read.dcf('DESCRIPTION')
+RCLINVAR_DESCRIPTION="${ROOT_DIR}/r/${PACKAGE}/DESCRIPTION" RCLINVAR_VERSION="${VERSION}" RCLINVAR_REPO_ROOT="${REPO_ROOT}" RCLINVAR_WEBR_R_SERIES="${WEBR_R_SERIES}" Rscript - <<'RS'
+desc <- read.dcf(Sys.getenv('RCLINVAR_DESCRIPTION'))
 fields <- as.list(desc[1, , drop = TRUE])
 fields$File <- sprintf('RClinVarbitration_%s.tgz', Sys.getenv('RCLINVAR_VERSION'))
 db <- as.data.frame(fields, stringsAsFactors = FALSE, check.names = FALSE)

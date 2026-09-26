@@ -3,12 +3,15 @@ PKG = RClinVarbitration
 VER = 0.1.1.9000
 TAR = $(PKG)_$(VER).tar.gz
 
-.PHONY: rd build install rdm errata site test check clean
+.PHONY: bootstrap rd build install rdm errata site test check clean
+
+bootstrap:
+	Rscript bootstrap.R ../..
 
 rd:
 	Rscript -e 'roxygen2::roxygenize(load_code = "source")'
 
-build: rd
+build: bootstrap rd
 	R CMD build .
 
 install: build
@@ -19,10 +22,10 @@ rdm: rd
 	rm -f README.html
 
 errata:
-	Rscript -e 'rmarkdown::render("docs/ERRATA.Rmd", quiet = TRUE)'
+	Rscript -e 'rmarkdown::render("../../docs/ERRATA.Rmd", quiet = TRUE)'
 
 site: rd errata
-	Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)'
+	Rscript -e 'pkgdown::build_site(override = list(destination = "../../docs"), new_process = FALSE, install = FALSE)'
 
 test: install
 	Rscript -e 'tinytest::test_package("RClinVarbitration", ncpu = 1L)'
@@ -31,5 +34,4 @@ check: build
 	R CMD check --no-manual $(TAR)
 
 clean:
-	rm -rf $(PKG).Rcheck $(TAR) man
-	rm -rf inst/rclinvarbitration_extension/build
+	rm -rf $(PKG).Rcheck $(TAR) inst/ext/build
