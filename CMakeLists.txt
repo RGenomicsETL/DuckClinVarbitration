@@ -1,4 +1,20 @@
 cmake_minimum_required(VERSION 3.16)
+
+# macOS target architecture must be set before project(). Prefer the vcpkg
+# target triplet so cross builds on Apple Silicon runners do not compile the
+# extension for the host arch while vcpkg builds x86_64 dependencies.
+if(APPLE AND (NOT DEFINED OSX_BUILD_ARCH OR "${OSX_BUILD_ARCH}" STREQUAL ""))
+    if(VCPKG_TARGET_TRIPLET MATCHES "^x64-osx")
+        set(OSX_BUILD_ARCH "x86_64")
+    elseif(VCPKG_TARGET_TRIPLET MATCHES "^arm64-osx")
+        set(OSX_BUILD_ARCH "arm64")
+    endif()
+endif()
+if(APPLE AND DEFINED OSX_BUILD_ARCH AND NOT "${OSX_BUILD_ARCH}" STREQUAL "")
+    set(CMAKE_OSX_ARCHITECTURES "${OSX_BUILD_ARCH}" CACHE STRING "" FORCE)
+    message(STATUS "macOS target arch: ${OSX_BUILD_ARCH}")
+endif()
+
 project(duckclinvarbitration LANGUAGES C)
 
 set(EXTENSION_NAME duckclinvarbitration CACHE STRING "DuckDB extension name")
