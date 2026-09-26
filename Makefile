@@ -19,10 +19,11 @@ test: release test-extension-symbols
 	$(TEST_RUNNER_RELEASE)
 
 test-extension-symbols: release
-	@if command -v nm >/dev/null 2>&1 && [ -f build/release/lib$(EXTENSION_NAME).so ]; then \
-	  nm -D --defined-only build/release/lib$(EXTENSION_NAME).so | awk '{print $$3}' | \
-	  awk 'BEGIN { bad=0; entry=0 } \
-	    $$0 == "duckclinvarbitration_init_c_api" {entry++ ; next} \
-	    /^(xml|xmlTextReader|gz|deflate|inflate|zlib)/ {print "leaked dependency symbol: " $$0; bad=1} \
-	    END {if (entry != 1) {print "expected one extension entrypoint, found " entry; bad=1}; exit bad}'; \
-	else echo 'symbol guard requires Linux nm and a release shared object'; exit 1; fi
+	@set -e; if [ "$$(uname -s)" = Darwin ]; then \
+	    nm -gU build/release/lib$(EXTENSION_NAME).dylib | awk '{print $$NF}' | sed 's/^_//'; \
+	  else \
+	    nm -D --defined-only build/release/lib$(EXTENSION_NAME).so | awk '{print $$3}'; \
+	  fi | awk 'BEGIN { bad=0; entry=0 } \
+	    $$0 == "duckclinvarbitration_init_c_api" {entry++; next} \
+	    /^(xml|gz|deflate|inflate|zlib)/ {print "leaked dependency symbol: " $$0; bad=1} \
+	    END {if (entry != 1) {print "expected one extension entrypoint, found " entry; bad=1}; exit bad}'

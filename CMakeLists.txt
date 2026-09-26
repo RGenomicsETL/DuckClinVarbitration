@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(duckclinvarbitration LANGUAGES C)
 
 set(EXTENSION_NAME duckclinvarbitration CACHE STRING "DuckDB extension name")
-set(DUCKDB_EXTENSION_API_VERSION_UNSTABLE "v1.5.3" CACHE STRING "Pinned DuckDB C ABI")
+set(DUCKDB_EXTENSION_API_VERSION_UNSTABLE "v1.5.2" CACHE STRING "Pinned DuckDB C ABI")
 
 # The C entrypoint uses the exact DuckDB headers corresponding to the binary.
 set(CAPI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/duckdb_capi/${DUCKDB_EXTENSION_API_VERSION_UNSTABLE}")
