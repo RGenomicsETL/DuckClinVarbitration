@@ -120,110 +120,183 @@ tbody td:first-child strong {
 <div class="body">
 <div id="TOC">
 <ul>
-<li><a href="#sec:sql-reference">SQL reference</a>
-<ul>
-<li><a href="#sec:clinvar-entity-shape">ClinVar entity shape</a></li>
-<li><a href="#sec:assertions-by-entity-type">Assertions by entity type</a></li>
-<li><a href="#sec:condition-level-classifications">Condition-level classifications</a></li>
-<li><a href="#sec:pubmed-entity-shape-and-article">PubMed entity shape and article</a></li>
-</ul>
-</li>
+<li><a href="#sec:what-it-does-at-release-scale">What it does at release scale</a></li>
+<li><a href="#sec:one-variant-from-submissions-to-decision">One variant, from submissions to decision</a></li>
+<li><a href="#sec:literature-with-history">Literature with history</a></li>
+<li><a href="#sec:where-things-live">Where things live</a></li>
+<li><a href="#sec:build">Build</a></li>
+<li><a href="#sec:acknowledgements">Acknowledgements</a></li>
 </ul>
 </div>
 <!-- README.md is generated from README.Rmd using [duckknit](https://github.com/rundel/duckknit). Please edit that file. -->
 <p><a href="https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/extension.yml"><img src="https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/extension.yml/badge.svg" alt="Extension CI" /></a>
-<a href="https://rgenomicsetl.github.io/DuckClinVarbitration/"><img src="https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/pkgdown.yaml/badge.svg" alt="Site" /></a></p>
-<p>DuckDB C extension for streaming ClinVar VCV XML and PubMed XML into
-SQL. Build with <code>make release</code> and open a DuckDB CLI matching the
-extension’s pinned DuckDB version with <code>-unsigned</code>. For README
-generation, download the matching official CLI (Linux amd64:
-<a href="https://github.com/duckdb/duckdb/releases/download/v1.5.2/duckdb_cli-linux-amd64.zip"><code>v1.5.2/duckdb_cli-linux-amd64.zip</code></a>)
-into the ignored <code>build/tools/</code> directory, then run <code>make readme</code>. Set
-<code>DUCKDB_CLI=/path/to/duckdb</code> if the binary is elsewhere. The queries
-below run against repository fixtures used by the <a href="https://github.com/RGenomicsETL/DuckClinVarbitration/tree/main/test/sql">SQL logic
-tests</a>.</p>
-<h2 id="sec:sql-reference">SQL reference</h2>
-<ul>
-<li><code>clinvar_xml_entities(path)</code> streams VCV variation, RCV and SCV
-entities with stable identifiers and JSON fields.</li>
-<li><code>rclinvarbitration_pubmed_xml_rows(path)</code> streams PMID-linked article,
-abstract and other PubMed entities.</li>
-<li><code>rclinvar_json_field(json, key)</code> extracts a field from an entity’s
-JSON text.</li>
-</ul>
-<h3 id="sec:clinvar-entity-shape">ClinVar entity shape</h3>
-<pre><code class="language-sql">SELECT vcv_accession, entity_type, entity_id, parent_type
+<a href="https://rgenomicsetl.github.io/DuckClinVarbitration/"><img src="https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/pkgdown.yaml/badge.svg" alt="Site" /></a>
+<a href="https://rgenomicsetl.r-universe.dev/RClinVarbitration"><img src="https://rgenomicsetl.r-universe.dev/badges/RClinVarbitration" alt="r-universe" /></a></p>
+<p>ClinVar is a ledger of submissions, and they often disagree. One variant can carry a decades-old
+consortium record, a handful of clinical-laboratory submissions and an expert
+panel review, each with its own classification, criteria and date. ClinVar’s
+aggregate label is one summary of that ledger;
+<a href="https://github.com/populationgenomics/clinvarbitration">ClinVarbitration</a>,
+from the Centre for Population Genomics, is another: an explicit policy that
+bins classifications, keeps modern evidence, lets expert panels decide and
+otherwise requires a 60/20 majority.</p>
+<p>DuckClinVarbitration runs that policy inside DuckDB. A small C extension streams
+ClinVar VCV XML and PubMed XML into relations any DuckDB client can query; the R
+front end, <a href="https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/">RClinVarbitration</a>,
+imports complete releases, applies the pinned policy and publishes versioned
+results. Every decision stays joined to the submissions that produced it.</p>
+<h2 id="sec:what-it-does-at-release-scale">What it does at release scale</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Measure</th>
+<th align="left">Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Agreement with upstream ClinVarbitration 2.2.11</td>
+<td align="left"><strong>4,125,389</strong> GRCh38 alleles, <strong>0</strong> classification or star differences (<a href="r/RClinVarbitration/inst/audits/march-2026-flat-exact-oracle.dcf">oracle</a>)</td>
+</tr>
+<tr>
+<td align="left">Full VCV XML release, ncbi-vcv-2026-07-02</td>
+<td align="left">5.8 GB gzipped XML to <strong>109,372,736</strong> scalar facts in 28.5 min, 4 threads, 0 duplicate keys (<a href="r/RClinVarbitration/inst/benchmarks/full-release-2026-07-02.dcf">receipt</a>)</td>
+</tr>
+<tr>
+<td align="left">Flat summary reports, ncbi-flat-2026-03</td>
+<td align="left"><strong>38,596,056</strong> rows, 4,124,600 allele decisions, in 3.7 min (<a href="r/RClinVarbitration/inst/benchmarks/full-flat-release-2026-03.dcf">receipt</a>)</td>
+</tr>
+<tr>
+<td align="left">XML against flat decisions</td>
+<td align="left">4,125,382 shared alleles; all 377 differences classified with source-row receipts (<a href="r/RClinVarbitration/inst/audits/march-2026-xml-flat-differential.dcf">audit</a>, <a href="docs/ERRATA.md">errata</a>)</td>
+</tr>
+</tbody>
+</table>
+<p>Upstream runs on Python, Hail, Nextflow and bcftools. Here it is one DuckDB
+database and a C extension built on libxml2’s streaming reader.</p>
+<h2 id="sec:one-variant-from-submissions-to-decision">One variant, from submissions to decision</h2>
+<p>The repository’s fixture is VCV000091629, a splice-donor variant in <em>BRCA1</em>.
+The extension exposes each submission as a row, from the DuckDB CLI or any other
+client:</p>
+<pre><code class="language-sql">SELECT rclinvar_json_field(fields_json, 'scv_accession')       AS scv,
+       rclinvar_json_field(fields_json, 'submitter_name')      AS submitter,
+       rclinvar_json_field(fields_json, 'classification')      AS classification,
+       rclinvar_json_field(fields_json, 'review_status')       AS review_status,
+       rclinvar_json_field(fields_json, 'date_last_evaluated') AS evaluated
 FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
-WHERE entity_type = 'rcv_assertion'
-ORDER BY entity_id
-LIMIT 2;
+WHERE entity_type = 'scv_assertion'
+ORDER BY evaluated;
 </code></pre>
-<pre><code>┌───────────────┬───────────────┬──────────────┬─────────────┐
-│ vcv_accession │  entity_type  │  entity_id   │ parent_type │
-│    varchar    │    varchar    │   varchar    │   varchar   │
-├───────────────┼───────────────┼──────────────┼─────────────┤
-│ VCV000091629  │ rcv_assertion │ RCV000077146 │ variation   │
-│ VCV000091629  │ rcv_assertion │ RCV000483230 │ variation   │
-└───────────────┴───────────────┴──────────────┴─────────────┘
+<pre><code>┌──────────────┬──────────────────────────────────────────────┬───────────────────┬─────────────────────────────────────┬────────────┐
+│     scv      │                  submitter                   │  classification   │            review_status            │ evaluated  │
+│   varchar    │                   varchar                    │      varchar      │               varchar               │  varchar   │
+├──────────────┼──────────────────────────────────────────────┼───────────────────┼─────────────────────────────────────┼────────────┤
+│ SCV000145071 │ Breast Cancer Information Core (BIC) (BRCA1) │ Pathogenic        │ no assertion criteria provided      │ 1999-06-22 │
+│ SCV000108943 │ Sharing Clinical Reports Project (SCRP)      │ Pathogenic        │ no assertion criteria provided      │ 2012-09-24 │
+│ SCV000569301 │ GeneDx                                       │ Pathogenic        │ criteria provided, single submitter │ 2016-08-16 │
+│ SCV000688489 │ Color Diagnostics, LLC DBA Color Health      │ Likely pathogenic │ criteria provided, single submitter │ 2022-02-09 │
+│ SCV000827729 │ Labcorp Genetics (formerly Invitae), Labcorp │ Pathogenic        │ criteria provided, single submitter │ 2022-10-28 │
+│ SCV003995313 │ Ambry Genetics                               │ Pathogenic        │ criteria provided, single submitter │ 2023-05-19 │
+└──────────────┴──────────────────────────────────────────────┴───────────────────┴─────────────────────────────────────┴────────────┘
 </code></pre>
-<h3 id="sec:assertions-by-entity-type">Assertions by entity type</h3>
-<p>These fixture counts expose the VCV’s variation, condition-level RCV and
-submission-level SCV structure; arbitration policy belongs to the <a href="https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/">R
-package</a>.</p>
-<pre><code class="language-sql">SELECT entity_type, count(*) AS assertions
-FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
-WHERE entity_type IN ('variation', 'rcv_assertion', 'scv_assertion')
-GROUP BY entity_type
-ORDER BY entity_type;
+<p>Two submissions predate 2016 and carry no assertion criteria. The policy keeps
+only modern evidence when any exists, so four submissions are left, all
+pathogenic or likely pathogenic. The R front end imports the same file and
+reports the decision together with the counts behind it:</p>
+<pre><code class="language-r">library(DBI)
+library(RClinVarbitration)
+
+con &lt;- dbConnect(duckdb::duckdb(config = list(allow_unsigned_extensions = &quot;true&quot;)))
+rclinvarbitration_enable(con)
+rclinvarbitration_init(con)
+invisible(rclinvarbitration_import_xml(
+  con, &quot;r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz&quot;,
+  release_id = &quot;fixture&quot;
+))
+
+dbGetQuery(con, &quot;
+  SELECT policy_classification, gold_stars, modern_filter_applied,
+         eligible_submission_count AS eligible,
+         retained_submission_count AS retained,
+         pathogenic_count AS P, benign_count AS B, uncertain_count AS U
+  FROM clinvar_policy_allele_decisions
+&quot;)
+#&gt;          policy_classification gold_stars modern_filter_applied eligible
+#&gt; 1 Pathogenic/Likely Pathogenic          1                  TRUE        6
+#&gt;   retained P B U
+#&gt; 1        4 4 0 0
 </code></pre>
-<pre><code>┌───────────────┬────────────┐
-│  entity_type  │ assertions │
-│    varchar    │   int64    │
-├───────────────┼────────────┤
-│ rcv_assertion │          4 │
-│ scv_assertion │          6 │
-│ variation     │          1 │
-└───────────────┴────────────┘
-</code></pre>
-<h3 id="sec:condition-level-classifications">Condition-level classifications</h3>
-<p>RCV classifications and review status are source evidence for
-arbitration, not an arbitration decision.</p>
-<pre><code class="language-sql">SELECT entity_id AS rcv,
-       rclinvar_json_field(fields_json, 'classification') AS classification,
-       rclinvar_json_field(fields_json, 'review_status') AS review_status
-FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
-WHERE entity_type = 'rcv_assertion'
-ORDER BY entity_id
-LIMIT 3;
-</code></pre>
-<pre><code>┌──────────────┬──────────────────────────────┬──────────────────────────────────────────────────────┐
-│     rcv      │        classification        │                    review_status                     │
-│   varchar    │           varchar            │                       varchar                        │
-├──────────────┼──────────────────────────────┼──────────────────────────────────────────────────────┤
-│ RCV000077146 │ Pathogenic                   │ no assertion criteria provided                       │
-│ RCV000483230 │ Pathogenic                   │ criteria provided, single submitter                  │
-│ RCV000581212 │ Pathogenic/Likely pathogenic │ criteria provided, multiple submitters, no conflicts │
-└──────────────┴──────────────────────────────┴──────────────────────────────────────────────────────┘
-</code></pre>
-<h3 id="sec:pubmed-entity-shape-and-article">PubMed entity shape and article</h3>
-<pre><code class="language-sql">SELECT pmid, entity_type, article_title, is_deleted
+<p><code>clinvar_policy_decisions</code> gives the same answer per disease, and
+<code>rclinvarbitration_disease_release_transitions()</code> lists the alleles whose
+decision changed between two releases. The <a href="https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/articles/arbitration-algorithm.html">algorithm
+article</a>
+walks through every rule, including where this package follows upstream’s
+documented intent rather than its code.</p>
+<h2 id="sec:literature-with-history">Literature with history</h2>
+<p>PubMed ships a baseline and then daily updates that revise and delete records.
+The scanner keeps each version as a row; RClinVarbitration stacks them into
+<code>pubmed_*_as_of(source)</code> views, so an analysis can ask what the literature
+looked like at any source cutoff.</p>
+<pre><code class="language-sql">SELECT 'baseline' AS source, pmid, article_title, is_deleted
 FROM rclinvarbitration_pubmed_xml_rows('r/RClinVarbitration/inst/extdata/pubmed_baseline_fixture.xml')
+WHERE entity_type = 'article'
+UNION ALL
+SELECT 'update', pmid, article_title, is_deleted
+FROM rclinvarbitration_pubmed_xml_rows('r/RClinVarbitration/inst/extdata/pubmed_update_fixture.xml')
+WHERE entity_type = 'article'
+UNION ALL
+SELECT 'delete', pmid, article_title, is_deleted
+FROM rclinvarbitration_pubmed_xml_rows('r/RClinVarbitration/inst/extdata/pubmed_delete_fixture.xml')
 WHERE entity_type = 'article';
 </code></pre>
-<pre><code>┌─────────┬─────────────┬────────────────────────┬────────────┐
-│  pmid   │ entity_type │     article_title      │ is_deleted │
-│ varchar │   varchar   │        varchar         │  boolean   │
-├─────────┼─────────────┼────────────────────────┼────────────┤
-│ 1001    │ article     │ Baseline article title │ false      │
-└─────────┴─────────────┴────────────────────────┴────────────┘
+<pre><code>┌──────────┬─────────┬────────────────────────┬────────────┐
+│  source  │  pmid   │     article_title      │ is_deleted │
+│ varchar  │ varchar │        varchar         │  boolean   │
+├──────────┼─────────┼────────────────────────┼────────────┤
+│ baseline │ 1001    │ Baseline article title │ false      │
+│ update   │ 1001    │ Updated article title  │ false      │
+│ delete   │ 1001    │ NULL                   │ true       │
+│ delete   │ 1002    │ NULL                   │ true       │
+└──────────┴─────────┴────────────────────────┴────────────┘
 </code></pre>
-<p>See the <a href="https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/">R package
-site</a>
-for arbitration and import APIs, <a href="https://rgenomicsetl.github.io/DuckClinVarbitration/docs/">project
-documentation</a>
-for errata, and the <a href="https://github.com/RGenomicsETL/DuckClinVarbitration">GitHub
-repository</a> for
-source.</p>
+<h2 id="sec:where-things-live">Where things live</h2>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">Owns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>duckclinvarbitration</code> extension (<code>src/</code>)</td>
+<td align="left"><code>clinvar_xml_entities(path)</code>, <code>rclinvarbitration_pubmed_xml_rows(path)</code>, <code>rclinvar_json_field(json, key)</code>: forward XML scanning, nothing else</td>
+</tr>
+<tr>
+<td align="left"><a href="https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/">RClinVarbitration</a> (<code>r/RClinVarbitration/</code>)</td>
+<td align="left">release download and import, the pinned policy, release transitions, Parquet and <a href="https://ducklake.select/">DuckLake</a> publication, PubMed history</td>
+</tr>
+<tr>
+<td align="left"><a href="https://github.com/RGenomicsETL/ducksemantics">ducksemantics</a></td>
+<td align="left">retrieval and grounding over the evidence and literature relations</td>
+</tr>
+</tbody>
+</table>
+<p>Known deviations from upstream and from ClinVar itself are recorded, with
+receipts, in the <a href="docs/ERRATA.md">errata</a>.</p>
+<h2 id="sec:build">Build</h2>
+<pre><code class="language-sh">git clone --recurse-submodules https://github.com/RGenomicsETL/DuckClinVarbitration
+cd DuckClinVarbitration
+make configure release test
+duckdb -unsigned -c &quot;LOAD 'build/release/duckclinvarbitration.duckdb_extension'&quot;
+</code></pre>
+<p>The DuckDB CLI must match the extension’s pinned DuckDB version. <code>make readme</code>
+renders this file with the official CLI in <code>build/tools/duckdb</code> (override with
+<code>DUCKDB_CLI</code>) and the R package installed from <code>r/RClinVarbitration</code>.</p>
+<h2 id="sec:acknowledgements">Acknowledgements</h2>
+<p>The decision policy is adapted from the Centre for Population Genomics’
+<a href="https://github.com/populationgenomics/clinvarbitration">ClinVarbitration</a>
+under its MIT licence. ClinVar and PubMed data are provided by NCBI.</p>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
