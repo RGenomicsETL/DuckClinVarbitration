@@ -45,17 +45,14 @@ jobs:
           working-directory: r/RClinVarbitration
           extra-packages: >-
             any::pkgdown,
+            any::litedown,
             any::duckdb,
             local::.
           needs: website
           dependencies: '"hard"'
 
       - name: Build site
-        working-directory: r/RClinVarbitration
-        run: |
-          pkgdown::build_site(override = list(destination = '../../docs'),
-                              new_process = FALSE, install = FALSE)
-        shell: Rscript {0}
+        run: make site
 
       - name: Deploy site
         if: github.event_name != 'pull_request'
@@ -63,4 +60,4 @@ jobs:
         with:
           clean: true
           branch: gh-pages
-          folder: docs
+          folder: _site

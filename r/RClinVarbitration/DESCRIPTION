@@ -37,5 +37,6 @@ VignetteBuilder: knitr
 SystemRequirements: libxml2 (>= 2.9.0), zlib, pkg-config, C compiler;
     Rtools (Windows)
 URL: https://github.com/RGenomicsETL/DuckClinVarbitration,
+    https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/,
     https://rgenomicsetl.github.io/DuckClinVarbitration/
 BugReports: https://github.com/RGenomicsETL/DuckClinVarbitration/issues

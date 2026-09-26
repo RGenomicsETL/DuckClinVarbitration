@@ -17,6 +17,7 @@ for linked clinical literature.
 Useful links:
 \itemize{
   \item \url{https://github.com/RGenomicsETL/DuckClinVarbitration}
+  \item \url{https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/}
   \item \url{https://rgenomicsetl.github.io/DuckClinVarbitration/}
   \item Report bugs at \url{https://github.com/RGenomicsETL/DuckClinVarbitration/issues}
 }

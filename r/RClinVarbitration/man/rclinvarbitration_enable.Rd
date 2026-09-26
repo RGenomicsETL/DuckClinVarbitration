@@ -15,7 +15,7 @@ rclinvarbitration_enable(con, extension_path = NULL)
 \code{con}, invisibly.
 }
 \description{
-Loads the package-owned \code{rclinvarbitration} extension. Its native
+Loads the package-owned \code{duckclinvarbitration} extension. Its native
 \code{clinvar_xml_entities(path)} and \code{rclinvarbitration_pubmed_xml_rows(path)}
 table functions are concrete one-pass staging surfaces for
 \code{\link[=rclinvarbitration_import_xml]{rclinvarbitration_import_xml()}} and

@@ -12,6 +12,7 @@ node_modules/
 *.tgz
 .pi/
 build/
+_site/
 cmake_build/
 configure/
 *.Rcheck

@@ -9,7 +9,7 @@ EXTENSION_VERSION := $(shell sed -n 's/^version:[[:space:]]*//p' description.yml
 include extension-ci-tools/makefiles/c_api_extensions/base.Makefile
 include extension-ci-tools/makefiles/c_api_extensions/c_cpp.Makefile
 
-.PHONY: all test test_release test_debug test-extension-symbols readme
+.PHONY: all test test_release test_debug test-extension-symbols readme site
 all: configure release
 configure: venv platform extension_version
 build_extension_with_metadata_release build_extension_with_metadata_debug: extension_version
@@ -26,6 +26,9 @@ test_debug: debug
 DUCKDB_CLI ?= build/tools/duckdb
 readme: release
 	DUCKDB_CLI="$(abspath $(DUCKDB_CLI))" Rscript -e 'rmarkdown::render("README.Rmd", output_file = "README.md", quiet = TRUE)'
+
+site:
+	Rscript scripts/build-site.R
 
 test-extension-symbols: release
 	@set -e; if [ "$$(uname -s)" = Darwin ]; then \

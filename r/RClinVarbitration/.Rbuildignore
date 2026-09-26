@@ -3,6 +3,7 @@
 ^\.github$
 ^_pkgdown\.yml$
 ^docs$
+^_site$
 ^RClinVarbitration\.Rproj$
 ^RClinVarbitration_[0-9.]+\.tar\.gz$
 ^RClinVarbitration\.Rcheck$

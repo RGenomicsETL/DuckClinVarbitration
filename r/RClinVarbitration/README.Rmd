@@ -7,7 +7,7 @@ output: github_document
 # RClinVarbitration
 
 [![R-CMD-check](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/pkgdown.yaml/badge.svg)](https://rgenomicsetl.github.io/DuckClinVarbitration/)
+[![pkgdown](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/pkgdown.yaml/badge.svg)](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/)
 [![r-universe](https://rgenomicsetl.r-universe.dev/badges/:name)](https://rgenomicsetl.r-universe.dev/)
 
 `RClinVarbitration` joins ClinVar's official `variant_summary` and
@@ -224,9 +224,9 @@ adds source entities that are absent from those reports. The storage vignette
 records the measured workloads separately rather than treating them as the
 same benchmark.
 
-Read the [arbitration algorithm](https://rgenomicsetl.github.io/DuckClinVarbitration/articles/arbitration-algorithm.html),
-[storage and caching guide](https://rgenomicsetl.github.io/DuckClinVarbitration/articles/storage-cache-and-performance.html),
-and [semantic/DuckLake/VariantStory integration](https://rgenomicsetl.github.io/DuckClinVarbitration/articles/semantic-ducklake-variantstory.html).
+Read the [arbitration algorithm](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/articles/arbitration-algorithm.html),
+[storage and caching guide](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/articles/storage-cache-and-performance.html),
+and [semantic/DuckLake/VariantStory integration](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/articles/semantic-ducklake-variantstory.html).
 The [deviation and differential audit](https://github.com/RGenomicsETL/DuckClinVarbitration/blob/main/docs/ERRATA.md) records known differences
 from upstream ClinVarbitration and ClinVar.
 

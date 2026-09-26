@@ -1,12 +1,15 @@
-url: https://rgenomicsetl.github.io/DuckClinVarbitration/
+url: https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/
 template:
   bootstrap: 5
 
 navbar:
   structure:
-    left: [intro, articles, reference, errata, news]
+    left: [project, intro, articles, reference, errata, news]
     right: [search, github]
   components:
+    project:
+      text: DuckDB extension
+      href: https://rgenomicsetl.github.io/DuckClinVarbitration/
     errata:
       text: Errata
       href: https://github.com/RGenomicsETL/DuckClinVarbitration/blob/main/docs/ERRATA.md
