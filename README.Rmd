@@ -1,0 +1,127 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd using [duckknit](https://github.com/rundel/duckknit). Please edit that file. -->
+
+```{r, include = FALSE}
+library(duckknit)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+
+# Rewrite duckknit's ``` duckdb fences to ``` sql so GitHub applies
+# SQL syntax highlighting in the rendered README.
+knitr::knit_hooks$set(document = function(x) {
+  gsub("(?m)^``` duckdb", "``` sql", x, perl = TRUE)
+})
+
+# Use duckknit's duckdb engine for sql chunks.
+knitr::knit_engines$set(sql = knitr::knit_engines$get("duckdb"))
+
+# Pre-start the default duckknit session with -unsigned so unsigned extensions
+# can be loaded. duckknit_start_session() only accepts a db path, not extra
+# CLI flags, so we launch the process directly and register it in duckknit's
+# internal session table.
+duckdb_cli <- Sys.getenv("DUCKDB_CLI", unset = "")
+options(duckknit.duckdb = if (nzchar(duckdb_cli)) duckdb_cli else NULL)
+extension_path <- normalizePath(
+  "build/release/duckclinvarbitration.duckdb_extension",
+  winslash = "/", mustWork = TRUE
+)
+local({
+  ns  <- asNamespace("duckknit")
+  cmd <- duckknit:::find_duckdb()
+  proc <- processx::process$new(
+    command = cmd,
+    args = c("-unsigned", ":memory:"),
+    stdin = "|", stdout = "|", stderr = "|",
+    cleanup = TRUE, cleanup_tree = TRUE
+  )
+  unlockBinding(".sessions", ns)
+  ns$.sessions[["readme"]] <- proc
+  lockBinding(".sessions", ns)
+  unlockBinding(".state", ns)
+  ns$.state$last_session <- "readme"
+  lockBinding(".state", ns)
+
+  load_sql <- sprintf(
+    "LOAD '%s';",
+    gsub("'", "''", extension_path, fixed = TRUE)
+  )
+  load_result <- duckknit:::duckknit_exec(proc, load_sql)
+  if (nzchar(trimws(load_result$stderr))) {
+    stop(load_result$stderr, call. = FALSE)
+  }
+})
+```
+
+# DuckClinVarbitration
+
+[![Extension CI](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/extension.yml/badge.svg)](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/extension.yml)
+[![Site](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/pkgdown.yaml/badge.svg)](https://rgenomicsetl.github.io/DuckClinVarbitration/)
+
+DuckDB C extension for streaming ClinVar VCV XML and PubMed XML into SQL.
+Build with `make release` and open a DuckDB CLI matching the extension's pinned
+DuckDB version with `-unsigned`. For README generation, download the matching official CLI (Linux amd64:
+[`v1.5.2/duckdb_cli-linux-amd64.zip`](https://github.com/duckdb/duckdb/releases/download/v1.5.2/duckdb_cli-linux-amd64.zip))
+into the ignored `build/tools/` directory, then run `make readme`. Set
+`DUCKDB_CLI=/path/to/duckdb` if the binary is elsewhere. The queries below run against
+repository fixtures used by the [SQL logic tests](https://github.com/RGenomicsETL/DuckClinVarbitration/tree/main/test/sql).
+
+## SQL reference
+
+- `clinvar_xml_entities(path)` streams VCV variation, RCV and SCV entities with stable identifiers and JSON fields.
+- `rclinvarbitration_pubmed_xml_rows(path)` streams PMID-linked article, abstract and other PubMed entities.
+- `rclinvar_json_field(json, key)` extracts a field from an entity's JSON text.
+
+### ClinVar entity shape
+
+```{sql eval=TRUE, collapse=FALSE, comment=""}
+SELECT vcv_accession, entity_type, entity_id, parent_type
+FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
+WHERE entity_type = 'rcv_assertion'
+ORDER BY entity_id
+LIMIT 2;
+```
+
+### Assertions by entity type
+
+These fixture counts expose the VCV's variation, condition-level RCV and submission-level SCV structure; arbitration policy belongs to the [R package](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/).
+
+```{sql eval=TRUE, collapse=FALSE, comment=""}
+SELECT entity_type, count(*) AS assertions
+FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
+WHERE entity_type IN ('variation', 'rcv_assertion', 'scv_assertion')
+GROUP BY entity_type
+ORDER BY entity_type;
+```
+
+### Condition-level classifications
+
+RCV classifications and review status are source evidence for arbitration, not an arbitration decision.
+
+```{sql eval=TRUE, collapse=FALSE, comment=""}
+SELECT entity_id AS rcv,
+       rclinvar_json_field(fields_json, 'classification') AS classification,
+       rclinvar_json_field(fields_json, 'review_status') AS review_status
+FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
+WHERE entity_type = 'rcv_assertion'
+ORDER BY entity_id
+LIMIT 3;
+```
+
+### PubMed entity shape and article
+
+```{sql eval=TRUE, collapse=FALSE, comment=""}
+SELECT pmid, entity_type, article_title, is_deleted
+FROM rclinvarbitration_pubmed_xml_rows('r/RClinVarbitration/inst/extdata/pubmed_baseline_fixture.xml')
+WHERE entity_type = 'article';
+```
+
+See the [R package site](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/) for arbitration and import APIs,
+[project documentation](https://rgenomicsetl.github.io/DuckClinVarbitration/docs/) for errata, and the
+[GitHub repository](https://github.com/RGenomicsETL/DuckClinVarbitration) for source.
