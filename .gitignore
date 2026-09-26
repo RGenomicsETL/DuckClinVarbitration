@@ -11,4 +11,8 @@ docs/*
 node_modules/
 *.tgz
 .pi/
-inst/rclinvarbitration_extension/build/
+build/
+cmake_build/
+configure/
+*.Rcheck
+r/RClinVarbitration/webr-repo/

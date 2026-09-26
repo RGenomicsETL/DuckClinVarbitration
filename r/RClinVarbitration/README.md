@@ -282,7 +282,7 @@ upstream Python TSV stage and this package’s flat reproducer over the
 complete March 2026 archives produced the same 4,125,389 keys with zero
 classification or star differences. Input, code, configuration, and
 output digests are in the [oracle
-manifest](https://github.com/RGenomicsETL/RClinVarbitration/blob/main/inst/audits/march-2026-flat-exact-oracle.dcf).
+manifest](https://github.com/RGenomicsETL/RClinVarbitration/blob/main/r/RClinVarbitration/inst/audits/march-2026-flat-exact-oracle.dcf).
 
 The independently matched XML/flat audit classified every one of the 16
 shared value differences and 361 key-set differences with source-row

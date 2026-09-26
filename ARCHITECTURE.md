@@ -1,4 +1,12 @@
-# RClinVarbitration architecture — current
+# duckclinvarbitration architecture
+
+The standalone DuckDB C extension in `src/` exposes
+`clinvar_xml_entities`, `rclinvar_json_field` and
+`rclinvarbitration_pubmed_xml_rows` to any DuckDB client. Its pinned headers
+are in `duckdb_capi/`; its SQL tests are in `test/sql/`. It performs forward
+XML scanning, not schema creation, download or publication. The R front end
+in `r/RClinVarbitration/` stages these C sources with `bootstrap.R`, then
+builds version-specific package artifacts using host libxml2 and zlib.
 
 RClinVarbitration owns ClinVar source facts, release identity, disease/allele
 arbitration, and source XML ingestion/publication for literature linked to
@@ -11,7 +19,7 @@ clinical interpretation.
   `rclinvarbitration_disease_release_transitions()` compares two imported
   releases under one configured profile; it is a selection relation, not a
   case-ranking or metric surface.
-- The package-owned libxml2 DuckDB extension contains concrete forward
+- The standalone libxml2 DuckDB extension contains concrete forward
   scanners for ClinVar VCV XML and PubMed baseline/update XML. The tested
   PubMed shapes are `PubmedArticle`, `PubmedBookArticle`, and multi-PMID
   `DeleteCitation`. PMID is article authority; DOI and PMCID are identifiers;
