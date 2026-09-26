@@ -155,6 +155,10 @@ The DuckDB CLI must match the extension’s pinned DuckDB version. `make readme`
 renders this file with the official CLI in `build/tools/duckdb` (override with
 `DUCKDB_CLI`) and the R package installed from `r/RClinVarbitration`.
 
+## License
+
+GPL-2.0-or-later; see [LICENSE](LICENSE). The R front end declares the same licence as `GPL (>= 2)`.
+
 ## Acknowledgements
 
 The decision policy is adapted from the Centre for Population Genomics’
