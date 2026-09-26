@@ -2,16 +2,17 @@
 
 ## DuckDB C extension headers
 
-`tools/ext/duckdb_capi/v1.5.0/` through `v1.5.4/` contain the exact DuckDB
+`inst/ext/duckdb_capi/v1.5.0/` through `v1.5.5/` contain the exact DuckDB
 C extension headers for every bundled `C_STRUCT_UNSTABLE` artifact. Each
 pinned upstream revision and repaired-header checksum is recorded in that
 version's `duckdb_headers.json`; DuckDB is licensed under the MIT License.
 
 ## libxml2
 
-The native extension links the host libxml2 library through `pkg-config`; it
-does not bundle libxml2. libxml2 is MIT-licensed. The extension uses only the
-forward-reader API and relies on its zlib-enabled XML.GZ support.
+The R package links host libxml2 and zlib through `pkg-config`; it does not
+bundle either library. libxml2 is MIT-licensed and zlib uses the zlib license.
+The extension reads XML through libxml2's forward-reader API and compressed
+input through zlib.
 
 ## ClinVarbitration decision policy
 

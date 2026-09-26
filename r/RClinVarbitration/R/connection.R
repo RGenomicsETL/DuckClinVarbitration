@@ -87,9 +87,9 @@ rclinvarbitration_extension_path <- function(
     duckdb_platform <- rclinvarbitration_installed_duckdb_platform()
   }
   duckdb_platform <- rclinvarbitration_normalize_duckdb_platform(duckdb_platform)
-  root <- system.file("rclinvarbitration_extension", "build", package = "RClinVarbitration", mustWork = TRUE)
+  root <- system.file("ext", "build", package = "RClinVarbitration", mustWork = TRUE)
   path <- file.path(
-    root, duckdb_version, duckdb_platform, "rclinvarbitration.duckdb_extension"
+    root, duckdb_version, duckdb_platform, "duckclinvarbitration.duckdb_extension"
   )
   if (!file.exists(path)) {
     bundled <- rclinvarbitration_bundled_duckdb_versions(root)
@@ -114,7 +114,7 @@ rclinvarbitration_extension_path <- function(
 
 #' Enable native ClinVar and PubMed XML scanning on a DuckDB connection
 #'
-#' Loads the package-owned `rclinvarbitration` extension. Its native
+#' Loads the package-owned `duckclinvarbitration` extension. Its native
 #' `clinvar_xml_entities(path)` and `rclinvarbitration_pubmed_xml_rows(path)`
 #' table functions are concrete one-pass staging surfaces for
 #' [rclinvarbitration_import_xml()] and
