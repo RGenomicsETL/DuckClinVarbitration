@@ -15,13 +15,14 @@ configure: venv platform extension_version
 build_extension_with_metadata_release build_extension_with_metadata_debug: extension_version
 release: build_extension_library_release build_extension_with_metadata_release
 debug: build_extension_library_debug build_extension_with_metadata_debug
-test: test_release test-extension-symbols
+# CI builds in its container, then runs test_release on the host against those
+# artifacts; test_release must not rebuild. Local `make test` builds first.
+test: release
+	$(MAKE) test_release
 
-test_release: release
-	$(MAKE) test_extension_release
+test_release: test_extension_release test-extension-symbols
 
-test_debug: debug
-	$(MAKE) test_extension_debug
+test_debug: test_extension_debug
 
 DUCKDB_CLI ?= build/tools/duckdb
 readme: release
@@ -30,7 +31,7 @@ readme: release
 site:
 	Rscript scripts/build-site.R
 
-test-extension-symbols: release
+test-extension-symbols:
 	@set -e; if [ "$$(uname -s)" = Darwin ]; then \
 	    nm -gU build/release/lib$(EXTENSION_NAME).dylib | awk '{print $$NF}' | sed 's/^_//'; \
 	  else \
