@@ -42,7 +42,7 @@ build.
 
 ## Quick start
 
-```{r quick-start}
+```{r quick-start, message=FALSE, warning=FALSE}
 library(DBI)
 library(duckdb)
 library(RClinVarbitration)
@@ -192,9 +192,9 @@ dbGetQuery(con, "
 
 ## DuckLake publication and release changes
 
-The [RGenomicsETL `ducklake-r`
-fork](https://github.com/RGenomicsETL/ducklake-r) registers that Parquet
-without collecting it into R. RClinVarbitration owns the key-based publication:
+The [upstream `ducklake-r`](https://github.com/tgerke/ducklake-r) package
+registers that Parquet without collecting it into R. RClinVarbitration owns
+the key-based publication:
 
 ```{r ducklake-publication, eval=FALSE}
 ducklake::set_ducklake_connection(full_con)

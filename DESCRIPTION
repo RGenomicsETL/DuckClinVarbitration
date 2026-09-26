@@ -32,7 +32,7 @@ Suggests:
     roxygen2,
     tinytest
 Remotes:
-    ducklake=RGenomicsETL/ducklake-r
+    tgerke/ducklake-r
 VignetteBuilder: knitr
 SystemRequirements: libxml2 (>= 2.9.0), zlib, pkg-config, C compiler;
     Rtools (Windows)

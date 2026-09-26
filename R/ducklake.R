@@ -139,7 +139,8 @@ rclinvarbitration_publish_ducklake <- function(
     author = "RClinVarbitration", commit_message = NULL) {
   if (!requireNamespace("ducklake", quietly = TRUE)) {
     stop(
-      "Install RGenomicsETL/ducklake-r to publish tidy exports.",
+      "Install the ducklake package (CRAN, or tgerke/ducklake-r ",
+      "for the development version) to publish tidy exports.",
       call. = FALSE
     )
   }

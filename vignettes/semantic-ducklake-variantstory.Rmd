@@ -157,10 +157,10 @@ ducklake::attach_ducklake("clinvar_lake", lake_path = "clinvar-lake")
 publication <- rclinvarbitration_publish_ducklake(con, tidy)
 ```
 
-The [RGenomicsETL `ducklake-r`
-fork](https://github.com/RGenomicsETL/ducklake-r) registers the Parquet in
-place. The publisher validates unique keys, uses persistent empty staging, and
-commits changed, new, and withdrawn decisions in one snapshot. Query that
+The [upstream `ducklake-r`](https://github.com/tgerke/ducklake-r) package
+registers the Parquet in place. The publisher validates unique keys, uses
+persistent empty staging, and commits changed, new, and withdrawn decisions in
+one snapshot. Query that
 snapshot with `ducklake::get_table_changes()`. Compare releases with the policy
 fixed; compare policies with the source release fixed.
 

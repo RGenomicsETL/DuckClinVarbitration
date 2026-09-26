@@ -151,10 +151,9 @@ dbGetQuery(con, "
 
 ## DuckLake publication and release changes
 
-The [RGenomicsETL `ducklake-r`
-fork](https://github.com/RGenomicsETL/ducklake-r) registers that Parquet
-without collecting it into R. RClinVarbitration owns the key-based
-publication:
+The [upstream `ducklake-r`](https://github.com/tgerke/ducklake-r)
+package registers that Parquet without collecting it into R.
+RClinVarbitration owns the key-based publication:
 
 ``` r
 ducklake::set_ducklake_connection(full_con)
