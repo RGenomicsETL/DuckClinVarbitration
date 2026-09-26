@@ -25,7 +25,7 @@ test_debug: debug
 
 DUCKDB_CLI ?= build/tools/duckdb
 readme: release
-	DUCKDB_CLI="$(abspath $(DUCKDB_CLI))" Rscript -e 'rmarkdown::render("README.Rmd", output_file = "README.md", quiet = TRUE)'
+	DUCKDB_CLI="$(abspath $(DUCKDB_CLI))" Rscript scripts/render-readme.R
 
 site:
 	Rscript scripts/build-site.R

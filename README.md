@@ -28,7 +28,7 @@ tests](https://github.com/RGenomicsETL/DuckClinVarbitration/tree/main/test/sql).
 
 ### ClinVar entity shape
 
-``` sql
+```sql
 SELECT vcv_accession, entity_type, entity_id, parent_type
 FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
 WHERE entity_type = 'rcv_assertion'
@@ -50,7 +50,7 @@ These fixture counts expose the VCV’s variation, condition-level RCV and
 submission-level SCV structure; arbitration policy belongs to the [R
 package](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/).
 
-``` sql
+```sql
 SELECT entity_type, count(*) AS assertions
 FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
 WHERE entity_type IN ('variation', 'rcv_assertion', 'scv_assertion')
@@ -72,7 +72,7 @@ ORDER BY entity_type;
 RCV classifications and review status are source evidence for
 arbitration, not an arbitration decision.
 
-``` sql
+```sql
 SELECT entity_id AS rcv,
        rclinvar_json_field(fields_json, 'classification') AS classification,
        rclinvar_json_field(fields_json, 'review_status') AS review_status
@@ -93,7 +93,7 @@ LIMIT 3;
 
 ### PubMed entity shape and article
 
-``` sql
+```sql
 SELECT pmid, entity_type, article_title, is_deleted
 FROM rclinvarbitration_pubmed_xml_rows('r/RClinVarbitration/inst/extdata/pubmed_baseline_fixture.xml')
 WHERE entity_type = 'article';

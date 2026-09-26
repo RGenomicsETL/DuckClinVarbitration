@@ -13,10 +13,10 @@ knitr::opts_chunk$set(
   out.width = "100%"
 )
 
-# Rewrite duckknit's ``` duckdb fences to ``` sql so GitHub applies
+# Rewrite duckknit's ``` duckdb fences to ```sql so GitHub applies
 # SQL syntax highlighting in the rendered README.
 knitr::knit_hooks$set(document = function(x) {
-  gsub("(?m)^``` duckdb", "``` sql", x, perl = TRUE)
+  gsub("(?m)^``` duckdb", "```sql", x, perl = TRUE)
 })
 
 # Use duckknit's duckdb engine for sql chunks.
