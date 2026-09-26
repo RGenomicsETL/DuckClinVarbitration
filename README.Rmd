@@ -1,5 +1,7 @@
 ---
-output: github_document
+output:
+  github_document:
+    pandoc_args: ["--wrap=preserve"]
 ---
 
 <!-- README.md is generated from README.Rmd using [duckknit](https://github.com/rundel/duckknit). Please edit that file. -->
@@ -57,71 +59,154 @@ local({
     stop(load_result$stderr, call. = FALSE)
   }
 })
+
+# Every number in the prose comes from a committed receipt.
+receipt <- function(...) {
+  as.list(read.dcf(file.path("r/RClinVarbitration/inst", ...))[1L, ])
+}
+n <- function(x) format(as.numeric(x), big.mark = ",", scientific = FALSE, trim = TRUE)
+gib <- function(bytes) sprintf("%.1f GB", as.numeric(bytes) / 1e9)
+minutes <- function(seconds) sprintf("%.1f min", as.numeric(seconds) / 60)
+oracle <- receipt("audits", "march-2026-flat-exact-oracle.dcf")
+xml_flat <- receipt("audits", "march-2026-xml-flat-differential.dcf")
+xml_run <- receipt("benchmarks", "full-release-2026-07-02.dcf")
+flat_run <- receipt("benchmarks", "full-flat-release-2026-03.dcf")
 ```
 
 # DuckClinVarbitration
 
 [![Extension CI](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/extension.yml/badge.svg)](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/extension.yml)
 [![Site](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/pkgdown.yaml/badge.svg)](https://rgenomicsetl.github.io/DuckClinVarbitration/)
+[![r-universe](https://rgenomicsetl.r-universe.dev/badges/RClinVarbitration)](https://rgenomicsetl.r-universe.dev/RClinVarbitration)
 
-DuckDB C extension for streaming ClinVar VCV XML and PubMed XML into SQL.
-Build with `make release` and open a DuckDB CLI matching the extension's pinned
-DuckDB version with `-unsigned`. For README generation, download the matching official CLI (Linux amd64:
-[`v1.5.2/duckdb_cli-linux-amd64.zip`](https://github.com/duckdb/duckdb/releases/download/v1.5.2/duckdb_cli-linux-amd64.zip))
-into the ignored `build/tools/` directory, then run `make readme`. Set
-`DUCKDB_CLI=/path/to/duckdb` if the binary is elsewhere. The queries below run against
-repository fixtures used by the [SQL logic tests](https://github.com/RGenomicsETL/DuckClinVarbitration/tree/main/test/sql).
+ClinVar is a ledger of submissions, and they often disagree. One variant can carry a decades-old
+consortium record, a handful of clinical-laboratory submissions and an expert
+panel review, each with its own classification, criteria and date. ClinVar's
+aggregate label is one summary of that ledger;
+[ClinVarbitration](https://github.com/populationgenomics/clinvarbitration),
+from the Centre for Population Genomics, is another: an explicit policy that
+bins classifications, keeps modern evidence, lets expert panels decide and
+otherwise requires a 60/20 majority.
 
-## SQL reference
+DuckClinVarbitration runs that policy inside DuckDB. A small C extension streams
+ClinVar VCV XML and PubMed XML into relations any DuckDB client can query; the R
+front end, [RClinVarbitration](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/),
+imports complete releases, applies the pinned policy and publishes versioned
+results. Every decision stays joined to the submissions that produced it.
 
-- `clinvar_xml_entities(path)` streams VCV variation, RCV and SCV entities with stable identifiers and JSON fields.
-- `rclinvarbitration_pubmed_xml_rows(path)` streams PMID-linked article, abstract and other PubMed entities.
-- `rclinvar_json_field(json, key)` extracts a field from an entity's JSON text.
+## What it does at release scale
 
-### ClinVar entity shape
+| Measure | Result |
+|:--|:--|
+| Agreement with upstream ClinVarbitration `r sub("^CPG ClinVarbitration ", "", oracle$Policy)` | **`r n(oracle[["Shared-Keys"]])`** GRCh38 alleles, **`r oracle[["Classification-Or-Star-Disagreements"]]`** classification or star differences ([oracle](r/RClinVarbitration/inst/audits/march-2026-flat-exact-oracle.dcf)) |
+| Full VCV XML release, `r xml_run$release_id` | `r gib(xml_run$source_bytes)` gzipped XML to **`r n(xml_run$total_rows)`** scalar facts in `r minutes(xml_run$elapsed_seconds)`, `r xml_run$threads` threads, `r n(xml_run$duplicate_record_keys)` duplicate keys ([receipt](r/RClinVarbitration/inst/benchmarks/full-release-2026-07-02.dcf)) |
+| Flat summary reports, `r flat_run$release_id` | **`r n(flat_run$total_rows)`** rows, `r n(flat_run$rows_decision)` allele decisions, in `r minutes(flat_run$elapsed_seconds)` ([receipt](r/RClinVarbitration/inst/benchmarks/full-flat-release-2026-03.dcf)) |
+| XML against flat decisions | `r n(xml_flat[["Shared-Keys"]])` shared alleles; all `r xml_flat[["Classification-Total"]]` differences classified with source-row receipts ([audit](r/RClinVarbitration/inst/audits/march-2026-xml-flat-differential.dcf), [errata](docs/ERRATA.md)) |
+
+Upstream runs on Python, Hail, Nextflow and bcftools. Here it is one DuckDB
+database and a C extension built on libxml2's streaming reader.
+
+## One variant, from submissions to decision
+
+The repository's fixture is VCV000091629, a splice-donor variant in *BRCA1*.
+The extension exposes each submission as a row, from the DuckDB CLI or any other
+client:
 
 ```{sql eval=TRUE, collapse=FALSE, comment=""}
-SELECT vcv_accession, entity_type, entity_id, parent_type
+SELECT rclinvar_json_field(fields_json, 'scv_accession')       AS scv,
+       rclinvar_json_field(fields_json, 'submitter_name')      AS submitter,
+       rclinvar_json_field(fields_json, 'classification')      AS classification,
+       rclinvar_json_field(fields_json, 'review_status')       AS review_status,
+       rclinvar_json_field(fields_json, 'date_last_evaluated') AS evaluated
 FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
-WHERE entity_type = 'rcv_assertion'
-ORDER BY entity_id
-LIMIT 2;
+WHERE entity_type = 'scv_assertion'
+ORDER BY evaluated;
 ```
 
-### Assertions by entity type
+Two submissions predate 2016 and carry no assertion criteria. The policy keeps
+only modern evidence when any exists, so four submissions are left, all
+pathogenic or likely pathogenic. The R front end imports the same file and
+reports the decision together with the counts behind it:
 
-These fixture counts expose the VCV's variation, condition-level RCV and submission-level SCV structure; arbitration policy belongs to the [R package](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/).
+```{r decision, message=FALSE}
+library(DBI)
+library(RClinVarbitration)
 
-```{sql eval=TRUE, collapse=FALSE, comment=""}
-SELECT entity_type, count(*) AS assertions
-FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
-WHERE entity_type IN ('variation', 'rcv_assertion', 'scv_assertion')
-GROUP BY entity_type
-ORDER BY entity_type;
+con <- dbConnect(duckdb::duckdb(config = list(allow_unsigned_extensions = "true")))
+rclinvarbitration_enable(con)
+rclinvarbitration_init(con)
+invisible(rclinvarbitration_import_xml(
+  con, "r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz",
+  release_id = "fixture"
+))
+
+dbGetQuery(con, "
+  SELECT policy_classification, gold_stars, modern_filter_applied,
+         eligible_submission_count AS eligible,
+         retained_submission_count AS retained,
+         pathogenic_count AS P, benign_count AS B, uncertain_count AS U
+  FROM clinvar_policy_allele_decisions
+")
 ```
 
-### Condition-level classifications
+`clinvar_policy_decisions` gives the same answer per disease, and
+`rclinvarbitration_disease_release_transitions()` lists the alleles whose
+decision changed between two releases. The [algorithm
+article](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/articles/arbitration-algorithm.html)
+walks through every rule, including where this package follows upstream's
+documented intent rather than its code.
 
-RCV classifications and review status are source evidence for arbitration, not an arbitration decision.
+## Literature with history
 
-```{sql eval=TRUE, collapse=FALSE, comment=""}
-SELECT entity_id AS rcv,
-       rclinvar_json_field(fields_json, 'classification') AS classification,
-       rclinvar_json_field(fields_json, 'review_status') AS review_status
-FROM clinvar_xml_entities('r/RClinVarbitration/inst/extdata/VCV_XML_VCV000091629.xml.gz')
-WHERE entity_type = 'rcv_assertion'
-ORDER BY entity_id
-LIMIT 3;
-```
-
-### PubMed entity shape and article
+PubMed ships a baseline and then daily updates that revise and delete records.
+The scanner keeps each version as a row; RClinVarbitration stacks them into
+`pubmed_*_as_of(source)` views, so an analysis can ask what the literature
+looked like at any source cutoff.
 
 ```{sql eval=TRUE, collapse=FALSE, comment=""}
-SELECT pmid, entity_type, article_title, is_deleted
+SELECT 'baseline' AS source, pmid, article_title, is_deleted
 FROM rclinvarbitration_pubmed_xml_rows('r/RClinVarbitration/inst/extdata/pubmed_baseline_fixture.xml')
+WHERE entity_type = 'article'
+UNION ALL
+SELECT 'update', pmid, article_title, is_deleted
+FROM rclinvarbitration_pubmed_xml_rows('r/RClinVarbitration/inst/extdata/pubmed_update_fixture.xml')
+WHERE entity_type = 'article'
+UNION ALL
+SELECT 'delete', pmid, article_title, is_deleted
+FROM rclinvarbitration_pubmed_xml_rows('r/RClinVarbitration/inst/extdata/pubmed_delete_fixture.xml')
 WHERE entity_type = 'article';
 ```
 
-See the [R package site](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/) for arbitration and import APIs,
-[project documentation](https://rgenomicsetl.github.io/DuckClinVarbitration/docs/) for errata, and the
-[GitHub repository](https://github.com/RGenomicsETL/DuckClinVarbitration) for source.
+## Where things live
+
+| | Owns |
+|:--|:--|
+| `duckclinvarbitration` extension (`src/`) | `clinvar_xml_entities(path)`, `rclinvarbitration_pubmed_xml_rows(path)`, `rclinvar_json_field(json, key)`: forward XML scanning, nothing else |
+| [RClinVarbitration](https://rgenomicsetl.github.io/DuckClinVarbitration/RClinVarbitration/) (`r/RClinVarbitration/`) | release download and import, the pinned policy, release transitions, Parquet and [DuckLake](https://ducklake.select/) publication, PubMed history |
+| [ducksemantics](https://github.com/RGenomicsETL/ducksemantics) | retrieval and grounding over the evidence and literature relations |
+
+Known deviations from upstream and from ClinVar itself are recorded, with
+receipts, in the [errata](docs/ERRATA.md).
+
+## Build
+
+```sh
+git clone --recurse-submodules https://github.com/RGenomicsETL/DuckClinVarbitration
+cd DuckClinVarbitration
+make configure release test
+duckdb -unsigned -c "LOAD 'build/release/duckclinvarbitration.duckdb_extension'"
+```
+
+The DuckDB CLI must match the extension's pinned DuckDB version. `make readme`
+renders this file with the official CLI in `build/tools/duckdb` (override with
+`DUCKDB_CLI`) and the R package installed from `r/RClinVarbitration`.
+
+```{r cleanup, include = FALSE}
+dbDisconnect(con, shutdown = TRUE)
+```
+
+## Acknowledgements
+
+The decision policy is adapted from the Centre for Population Genomics'
+[ClinVarbitration](https://github.com/populationgenomics/clinvarbitration)
+under its MIT licence. ClinVar and PubMed data are provided by NCBI.

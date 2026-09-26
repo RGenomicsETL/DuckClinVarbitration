@@ -26,7 +26,9 @@ test_debug: test_extension_debug
 
 DUCKDB_CLI ?= build/tools/duckdb
 readme: release
-	DUCKDB_CLI="$(abspath $(DUCKDB_CLI))" Rscript scripts/render-readme.R
+	mkdir -p build/rlib
+	R CMD INSTALL --no-test-load -l build/rlib r/RClinVarbitration
+	R_LIBS="$(abspath build/rlib):$$R_LIBS" DUCKDB_CLI="$(abspath $(DUCKDB_CLI))" Rscript scripts/render-readme.R
 
 site:
 	Rscript scripts/build-site.R
