@@ -6,8 +6,8 @@ output: github_document
 
 # RClinVarbitration
 
-[![R-CMD-check](https://github.com/RGenomicsETL/RClinVarbitration/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/RGenomicsETL/RClinVarbitration/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/RGenomicsETL/RClinVarbitration/actions/workflows/pkgdown.yaml/badge.svg)](https://rgenomicsetl.github.io/RClinVarbitration/)
+[![R-CMD-check](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/RGenomicsETL/DuckClinVarbitration/actions/workflows/pkgdown.yaml/badge.svg)](https://rgenomicsetl.github.io/DuckClinVarbitration/)
 [![r-universe](https://rgenomicsetl.r-universe.dev/badges/:name)](https://rgenomicsetl.r-universe.dev/)
 
 `RClinVarbitration` joins ClinVar's official `variant_summary` and
@@ -224,10 +224,10 @@ adds source entities that are absent from those reports. The storage vignette
 records the measured workloads separately rather than treating them as the
 same benchmark.
 
-Read the [arbitration algorithm](https://rgenomicsetl.github.io/RClinVarbitration/articles/arbitration-algorithm.html),
-[storage and caching guide](https://rgenomicsetl.github.io/RClinVarbitration/articles/storage-cache-and-performance.html),
-and [semantic/DuckLake/VariantStory integration](https://rgenomicsetl.github.io/RClinVarbitration/articles/semantic-ducklake-variantstory.html).
-The [deviation and differential audit](https://github.com/RGenomicsETL/RClinVarbitration/blob/main/docs/ERRATA.md) records known differences
+Read the [arbitration algorithm](https://rgenomicsetl.github.io/DuckClinVarbitration/articles/arbitration-algorithm.html),
+[storage and caching guide](https://rgenomicsetl.github.io/DuckClinVarbitration/articles/storage-cache-and-performance.html),
+and [semantic/DuckLake/VariantStory integration](https://rgenomicsetl.github.io/DuckClinVarbitration/articles/semantic-ducklake-variantstory.html).
+The [deviation and differential audit](https://github.com/RGenomicsETL/DuckClinVarbitration/blob/main/docs/ERRATA.md) records known differences
 from upstream ClinVarbitration and ClinVar.
 
 ## Submitter exclusions
@@ -314,14 +314,14 @@ of the pinned upstream Python TSV stage and this package's flat reproducer over
 the complete March 2026 archives produced the same 4,125,389 keys with zero
 classification or star differences. Input, code, configuration, and output
 digests are in the
-[oracle manifest](https://github.com/RGenomicsETL/RClinVarbitration/blob/main/r/RClinVarbitration/inst/audits/march-2026-flat-exact-oracle.dcf).
+[oracle manifest](https://github.com/RGenomicsETL/DuckClinVarbitration/blob/main/r/RClinVarbitration/inst/audits/march-2026-flat-exact-oracle.dcf).
 
 The independently matched XML/flat audit classified every one of the 16 shared
 value differences and 361 key-set differences with source-row receipts. Most
 come from NCBI flat rows whose classification is `-` while XML carries a current
 classification; the remainder are one duplicate-SCV identity case, five source
 vocabulary differences, and two nested compound alleles. The
-[ERRATA audit](https://github.com/RGenomicsETL/RClinVarbitration/blob/main/docs/ERRATA.md)
+[ERRATA audit](https://github.com/RGenomicsETL/DuckClinVarbitration/blob/main/docs/ERRATA.md)
 contains the full counts and receipts. A published Zenodo release with 16,865
 reference-only keys used an unpinned source snapshot; it is not the exact-input
 conformance result.

@@ -1,4 +1,4 @@
-url: https://rgenomicsetl.github.io/RClinVarbitration/
+url: https://rgenomicsetl.github.io/DuckClinVarbitration/
 template:
   bootstrap: 5
 
@@ -9,7 +9,7 @@ navbar:
   components:
     errata:
       text: Errata
-      href: https://github.com/RGenomicsETL/RClinVarbitration/blob/main/docs/ERRATA.md
+      href: https://github.com/RGenomicsETL/DuckClinVarbitration/blob/main/docs/ERRATA.md
 
 articles:
   - title: Concepts and integrations

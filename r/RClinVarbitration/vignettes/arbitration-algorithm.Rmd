@@ -149,7 +149,7 @@ fallback order is ClinVar trait-set ID, normalized disease name, then the
 package's condition entity ID. Canonical cross-references are selected in this
 order: MedGen, MONDO, OMIM, Orphanet, MeSH, UMLS, then OMIM phenotypic series.
 These are pragmatic grouping rules and are audited as deviations from NCBI's
-own aggregate semantics in the [deviation and differential audit](https://github.com/RGenomicsETL/RClinVarbitration/blob/main/docs/ERRATA.md).
+own aggregate semantics in the [deviation and differential audit](https://github.com/RGenomicsETL/DuckClinVarbitration/blob/main/docs/ERRATA.md).
 
 ## Output and audit columns
 
