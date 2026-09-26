@@ -9,9 +9,10 @@ headers and their `duckdb_headers.json` checksums. The extension uses
 
 The standalone CMake build resolves static libxml2 and zlib through vcpkg.
 The libxml2 port exposes optional `iconv` and `zlib` features; both are off
-here. Its portfile has no separate HTTP, FTP, Python or LZMA feature toggles;
-those settings follow the port's upstream CMake defaults. The extension does
-not call those interfaces. vcpkg's static PIC archives are required on ELF
+here. Its portfile has no HTTP, FTP, Python or LZMA feature toggles. In the
+local libxml2 2.15.1 vcpkg build, the CMake cache reports HTTP and Python
+OFF; FTP and LZMA are not CMake options in that port. The extension does not
+call those interfaces. vcpkg's static PIC archives are required on ELF
 platforms; a distribution's non-PIC `libxml2.a` cannot make a shared module.
 Only `duckclinvarbitration_init_c_api` is exported on ELF; the symbol guard
 checks the resulting shared object.
