@@ -9,14 +9,19 @@ EXTENSION_VERSION := $(shell sed -n 's/^version:[[:space:]]*//p' description.yml
 include extension-ci-tools/makefiles/c_api_extensions/base.Makefile
 include extension-ci-tools/makefiles/c_api_extensions/c_cpp.Makefile
 
-.PHONY: all test test-extension-symbols
+.PHONY: all test test_release test_debug test-extension-symbols
 all: configure release
 configure: venv platform extension_version
 build_extension_with_metadata_release build_extension_with_metadata_debug: extension_version
 release: build_extension_library_release build_extension_with_metadata_release
 debug: build_extension_library_debug build_extension_with_metadata_debug
-test: release test-extension-symbols
-	$(TEST_RUNNER_RELEASE)
+test: test_release test-extension-symbols
+
+test_release: release
+	$(MAKE) test_extension_release
+
+test_debug: debug
+	$(MAKE) test_extension_debug
 
 test-extension-symbols: release
 	@set -e; if [ "$$(uname -s)" = Darwin ]; then \
