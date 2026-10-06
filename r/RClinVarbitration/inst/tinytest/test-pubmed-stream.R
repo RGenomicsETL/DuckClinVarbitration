@@ -271,7 +271,7 @@ expect_equal(version_sections$snapshot_id, version_sections$version_id)
 expect_equal(version_sections$source_ordinal, version_sections$high_water_ordinal)
 expect_equal(version_sections$section_rows, c(3, 2, 0))
 literature_sections <- DBI::dbGetQuery(con, "
-  SELECT version_id, source_ordinal, section, subsection, text
+  SELECT version_id, source_ordinal, section, subsection, text, source_entity_ordinal
   FROM pubmed_literature_sections
   WHERE pmid = '1001'
   ORDER BY source_ordinal, CASE section WHEN 'title' THEN 0 ELSE 1 END, subsection
@@ -295,6 +295,30 @@ expect_equal(
     "Updated article title", "Updated results."
   )
 )
+expect_true(all(is.na(
+  literature_sections$source_entity_ordinal[literature_sections$section == "title"]
+)))
+abstract_locators <- DBI::dbGetQuery(con, "
+  SELECT source_entity_ordinal FROM pubmed_abstracts
+  WHERE pmid = '1001'
+  ORDER BY CASE source_id WHEN 'pubmed-baseline' THEN 0 ELSE 1 END, section
+")
+expect_equal(
+  literature_sections$source_entity_ordinal[literature_sections$section == "abstract"],
+  abstract_locators$source_entity_ordinal
+)
+expect_equal(DBI::dbGetQuery(con, "
+  SELECT count(*) AS n FROM pubmed_literature_sections
+  WHERE section = 'abstract'
+    AND source_entity_ordinal IS NULL
+")$n, 0)
+expect_equal(DBI::dbGetQuery(con, "
+  SELECT count(*) AS n FROM (
+    SELECT provider_id, article_id, version_id, section, source_entity_ordinal
+    FROM pubmed_literature_sections
+    GROUP BY ALL HAVING count(*) > 1
+  )
+")$n, 0)
 expect_error(
   rclinvarbitration_import_pubmed(con, baseline, source_id = "pubmed-baseline"),
   "already exists"

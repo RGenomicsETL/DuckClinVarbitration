@@ -1,5 +1,7 @@
 # RClinVarbitration development
 
+- Preserve raw abstract source entity ordinals in `pubmed_literature_sections`
+  alongside subsection labels; title sections have a NULL entity ordinal.
 - Keep `release_id` as a required tidy-Parquet column and validate it together
   with policy/profile identity before DuckLake publication.
 - Reject an unconfigured flat-import policy profile before source-row or

@@ -19,6 +19,7 @@ typed source order without deleting historical facts; read-only
 \verb{pubmed_literature_*} views project all source versions for direct semantic
 consumers. Literature sections normalize article titles to \code{section = "title"}
 and abstracts to \code{section = "abstract"}, retaining structured labels in
-\code{subsection}. The release catalogue and small policy configuration tables
-remain separate.
+\code{subsection} and abstract locators in \code{source_entity_ordinal} (NULL for
+titles). The release catalogue and small policy configuration tables remain
+separate.
 }

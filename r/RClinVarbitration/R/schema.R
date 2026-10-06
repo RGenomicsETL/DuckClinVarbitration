@@ -9,8 +9,9 @@
 #' `pubmed_literature_*` views project all source versions for direct semantic
 #' consumers. Literature sections normalize article titles to `section = "title"`
 #' and abstracts to `section = "abstract"`, retaining structured labels in
-#' `subsection`. The release catalogue and small policy configuration tables
-#' remain separate.
+#' `subsection` and abstract locators in `source_entity_ordinal` (NULL for
+#' titles). The release catalogue and small policy configuration tables remain
+#' separate.
 #'
 #' @return A named character vector of SQL statements.
 #' @export
@@ -387,12 +388,13 @@ rclinvarbitration_schema_sql <- function() {
       "CREATE OR REPLACE VIEW pubmed_literature_sections AS",
       "SELECT s.source_provider AS provider_id, a.pmid AS article_id, a.pmid,",
       "a.source_id AS version_id, s.source_ordinal, 'title' AS section,",
-      "CAST(NULL AS TEXT) AS subsection, a.article_title AS text",
+      "CAST(NULL AS TEXT) AS subsection, a.article_title AS text,",
+      "CAST(NULL AS UBIGINT) AS source_entity_ordinal",
       "FROM pubmed_articles a JOIN pubmed_sources s USING (source_id)",
       "WHERE a.article_title IS NOT NULL AND trim(a.article_title) <> ''",
       "UNION ALL SELECT s.source_provider AS provider_id, a.pmid AS article_id, a.pmid,",
       "a.source_id AS version_id, s.source_ordinal, 'abstract' AS section,",
-      "a.section AS subsection, a.text FROM pubmed_abstracts a",
+      "a.section AS subsection, a.text, a.source_entity_ordinal FROM pubmed_abstracts a",
       "JOIN pubmed_sources s USING (source_id)"
     ),
     pubmed_current_articles = paste(
