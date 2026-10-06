@@ -251,11 +251,12 @@ For direct semantic consumption, the read-only
 provider, snapshot/version, and typed source order. The sections view
 emits article titles as `section = "title"` with `subsection = NULL`,
 and structured abstracts as `section = "abstract"` with the original
-PubMed label in `subsection`. They are the canonical source handoff to
-ducksemantics: RClinVarbitration owns source identity and temporal
-facts; ducksemantics consumes the relations for retrieval/grounding
-without a package dependency, cache, caller-built temporal model, or
-shadow copy.
+PubMed label in `subsection` and the raw abstract locator in
+`source_entity_ordinal` (NULL for titles). They are the canonical source
+handoff to ducksemantics: RClinVarbitration owns source identity and
+temporal facts; ducksemantics consumes the relations for
+retrieval/grounding without a package dependency, cache, caller-built
+temporal model, or shadow copy.
 
 ``` r
 

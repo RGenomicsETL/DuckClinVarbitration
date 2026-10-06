@@ -9,7 +9,8 @@ as-of relations use typed source order without deleting historical
 facts; read-only `pubmed_literature_*` views project all source versions
 for direct semantic consumers. Literature sections normalize article
 titles to `section = "title"` and abstracts to `section = "abstract"`,
-retaining structured labels in `subsection`. The release catalogue and
+retaining structured labels in `subsection` and abstract locators in
+`source_entity_ordinal` (NULL for titles). The release catalogue and
 small policy configuration tables remain separate.
 
 ## Usage
