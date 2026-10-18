@@ -3,12 +3,17 @@
 #
 # This is an explicit vendoring tool, not an install-time network step.
 # Usage:
-#   Rscript tools/fetch_duckdb_headers.R --ref v1.5.5
-#   Rscript tools/fetch_duckdb_headers.R --repo /path/to/duckdb --ref v1.5.5
+#   Rscript tools/fetch_duckdb_headers.R --ref v1.5.6
+#   Rscript tools/fetch_duckdb_headers.R --repo /path/to/duckdb --ref v1.5.6
 #
 # Unless --dest is supplied, each exact version is written below
 # duckdb_capi/<ref>/. Keep duckdb_capi/versions.txt in sync with the
-# exact versions that the R front end should build.
+# exact versions that the R front end should build, and keep
+# duckdb_capi/stable_capi.txt pointing at the stable C API floor.
+#
+# The stable C API v2 SDK (duckdb_v2.h, duckdb_extension_v2.h) that powers the
+# optional v2 host is vendored under duckdb_capi_v2/; refresh it from the
+# revision recorded in duckdb_capi_v2/REVISION and update that manifest.
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -38,9 +43,9 @@ if (!file.exists(file.path(repo_root, "duckdb_capi", "versions.txt"))) {
 }
 
 opts <- parse_args(args)
-ref <- opts[["ref"]] %||% Sys.getenv("RCLINVAR_DUCKDB_REF", unset = "v1.5.5")
+ref <- opts[["ref"]] %||% Sys.getenv("RCLINVAR_DUCKDB_REF", unset = "v1.5.6")
 if (!grepl("^v[0-9]+\\.[0-9]+\\.[0-9]+$", ref)) {
-  stop("--ref must be an exact DuckDB release such as v1.5.5", call. = FALSE)
+  stop("--ref must be an exact DuckDB release such as v1.5.6", call. = FALSE)
 }
 dest_opt <- opts[["dest"]] %||% ""
 dest <- if (nzchar(dest_opt)) {

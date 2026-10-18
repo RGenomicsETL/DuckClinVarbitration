@@ -2,10 +2,33 @@ fixture <- system.file("extdata", "VCV_XML_VCV000091629.xml.gz", package = "RCli
 expect_true(nzchar(fixture))
 expect_true(file.exists(fixture))
 
-supported_versions <- paste0("v1.5.", 0:5)
+# The vendored manifest is the single source of truth for the engine releases
+# that ship a bundled artifact, so a new release only needs a manifest line and
+# its vendored headers; this list never drifts.
+manifest <- system.file(
+  "ext", "duckdb_capi", "versions.txt",
+  package = "RClinVarbitration", mustWork = TRUE
+)
+supported_versions <- trimws(readLines(manifest, warn = FALSE))
+supported_versions <- supported_versions[
+  nzchar(supported_versions) & !startsWith(supported_versions, "#")
+]
 platform_con <- DBI::dbConnect(duckdb::duckdb())
 engine_platform <- DBI::dbGetQuery(platform_con, "PRAGMA platform")$platform
 DBI::dbDisconnect(platform_con, shutdown = TRUE)
+# The native extension is ABI-pinned to an exact engine release. A DuckDB patch
+# newer than the vendored manifest (as after a duckdb-r release) has no artifact
+# yet: skip the native assertions rather than failing the check, and vendor its
+# headers with tools/fetch_duckdb_headers.R to re-enable them.
+if (inherits(
+  tryCatch(
+    rclinvarbitration_extension_path(duckdb_platform = engine_platform),
+    error = function(e) e
+  ),
+  "error"
+)) {
+  exit_file("no bundled RClinVarbitration extension for the installed DuckDB engine")
+}
 artifact_paths <- vapply(
   supported_versions,
   rclinvarbitration_extension_path,

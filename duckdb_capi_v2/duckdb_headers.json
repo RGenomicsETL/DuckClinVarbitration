@@ -1,0 +1,15 @@
+{
+  "duckdb_capi_version": "v2.0.0",
+  "duckdb_sdk_revision": "fece4143738e2b1d05a851d5c5dc036838aff8ec",
+  "source": "https://github.com/duckdb/duckdb",
+  "headers": {
+    "duckdb_v2.h": {
+      "path": "duckdb_capi_v2/duckdb_v2.h",
+      "sha256": "0f134bd33f1ee1a511f21d5ad122213d5897320c301d5dca9d5fb24a658acd73"
+    },
+    "duckdb_extension_v2.h": {
+      "path": "duckdb_capi_v2/duckdb_extension_v2.h",
+      "sha256": "0f69df71d9de3d1d707a95ff8403a6aebbde2e29077a035d201affe73b91cc2f"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# DuckDB stable C extension API floor (ABI type C_STRUCT).
+#
+# v1.5.6 promoted every function this extension uses out of the unstable
+# surface and into the stable C API, so a C_STRUCT artifact built from these
+# headers is portable instead of exact-version pinned.
+#
+# DuckDB v2.0 keeps loading stable C API extensions up to v1.5.6 (its
+# IsSupportedCAPIVersion accepts C API major 1 through minor 5, patch 6) and
+# interprets C_STRUCT_UNSTABLE as the v2 entrypoint. The C_STRUCT artifact built
+# here therefore loads unchanged on DuckDB v1.5.6 and on the v2.0 line, while
+# the C_STRUCT_UNSTABLE artifacts remain pinned to their exact v1.5.0..v1.5.5
+# engines.
+#
+# One exact release per line. The first entry is the floor used for every
+# engine at or above it; keep exactly one line.
+v1.5.6

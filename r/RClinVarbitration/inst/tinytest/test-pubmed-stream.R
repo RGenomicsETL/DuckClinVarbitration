@@ -15,6 +15,23 @@ book <- system.file(
   mustWork = TRUE
 )
 
+# A DuckDB engine newer than the vendored stable C API floor (or older than the
+# oldest bundled release) has no artifact yet: skip the native assertions rather
+# than failing the check, and vendor its headers with
+# tools/fetch_duckdb_headers.R to re-enable them.
+platform_con <- DBI::dbConnect(duckdb::duckdb())
+engine_platform <- DBI::dbGetQuery(platform_con, "PRAGMA platform")$platform
+DBI::dbDisconnect(platform_con, shutdown = TRUE)
+if (inherits(
+  tryCatch(
+    rclinvarbitration_extension_path(duckdb_platform = engine_platform),
+    error = function(e) e
+  ),
+  "error"
+)) {
+  exit_file("no bundled RClinVarbitration extension for the installed DuckDB engine")
+}
+
 extension_directory <- tempfile("rclinvarbitration-pubmed-extensions-")
 con <- DBI::dbConnect(duckdb::duckdb(config = list(
   allow_unsigned_extensions = "true",

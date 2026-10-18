@@ -24,7 +24,7 @@ jobs:
           - {os: ubuntu-latest, r: 'release'}
           - {os: macos-latest, r: 'release'}
           - {os: windows-latest, r: 'release'}
-        duckdb: ['1.5.4']
+        duckdb: ['1.5.5', '1.5.6']
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -65,7 +65,7 @@ jobs:
             any::rmarkdown,
             any::roxygen2,
             any::tinytest,
-            any::duckdb,
+            duckdb@${{ matrix.duckdb }},
             local::.
           needs: check
           dependencies: '"hard"'

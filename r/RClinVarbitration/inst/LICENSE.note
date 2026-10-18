@@ -2,10 +2,18 @@
 
 ## DuckDB C extension headers
 
-`inst/ext/duckdb_capi/v1.5.0/` through `v1.5.5/` contain the exact DuckDB
-C extension headers for every bundled `C_STRUCT_UNSTABLE` artifact. Each
-pinned upstream revision and repaired-header checksum is recorded in that
-version's `duckdb_headers.json`; DuckDB is licensed under the MIT License.
+`inst/ext/duckdb_capi/v1.5.0/` through `v1.5.6/` contain the exact DuckDB
+C extension headers for every bundled artifact. Each pinned upstream revision
+and repaired-header checksum is recorded in that version's
+`duckdb_headers.json`. `v1.5.0` through `v1.5.5` build `C_STRUCT_UNSTABLE`
+artifacts; `v1.5.6` is the stable C API floor (see `stable_capi.txt`) and builds
+a `C_STRUCT` artifact that also serves the DuckDB v2.0 line.
+
+`inst/ext/duckdb_capi_v2/` holds the pinned DuckDB stable C API v2 SDK
+(`duckdb_v2.h`, `duckdb_extension_v2.h`); its upstream revision is recorded in
+`REVISION` and its header checksums in `duckdb_headers.json`. The v2 host builds
+a `C_STRUCT` artifact recording C API `v2.0.0`. DuckDB is licensed under the MIT
+License.
 
 ## libxml2
 

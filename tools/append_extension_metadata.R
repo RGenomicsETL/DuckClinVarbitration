@@ -27,7 +27,13 @@ options <- parse_args(args)
 required <- c("library-file", "out-file", "extension-name", "duckdb-platform", "duckdb-version", "extension-version", "abi-type")
 missing <- required[!vapply(required, function(name) nzchar(options[[name]] %||% ""), logical(1))]
 if (length(missing)) stop("missing required argument(s): ", paste(missing, collapse = ", "), call. = FALSE)
-if (!identical(options[["abi-type"]], "C_STRUCT_UNSTABLE")) stop("only C_STRUCT_UNSTABLE metadata is supported", call. = FALSE)
+if (!options[["abi-type"]] %in% c("C_STRUCT", "C_STRUCT_UNSTABLE")) {
+  stop(
+    "extension ABI type must be 'C_STRUCT' or 'C_STRUCT_UNSTABLE', not '",
+    options[["abi-type"]], "'",
+    call. = FALSE
+  )
+}
 
 temporary <- paste0(options[["out-file"]], ".tmp")
 on.exit(unlink(temporary), add = TRUE)

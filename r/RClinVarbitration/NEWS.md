@@ -1,5 +1,20 @@
 # RClinVarbitration development
 
+- Bundle a `v1.5.6` DuckDB extension and make it the stable C API floor:
+  DuckDB stabilized every function this extension uses in `v1.5.6`, so the
+  `v1.5.6` artifact carries `C_STRUCT` metadata recording C API `v1.5.6`
+  instead of the exact-version `C_STRUCT_UNSTABLE` ABI. DuckDB negotiates that
+  artifact for every newer engine, so the package now loads on the DuckDB
+  `v2.0` line without a separate bundle entry (`C_STRUCT_UNSTABLE` selects the
+  v2 entrypoint there and no longer loads). Engines newer than the newest
+  bundled release resolve to the newest stable artifact; engines older than the
+  oldest bundled release still error.
+- Add a second native host for DuckDB's stable C API v2. The ClinVar and PubMed
+  XML scanners move into shared `.inc` cores, and a new
+  `duckclinvarbitration_extension_v2.c` host builds a `C_STRUCT` artifact
+  recording C API `v2.0.0` from a pinned v2 SDK. The package prefers that host
+  for the DuckDB `v2.0` line and falls back to the `v1.5.6` stable artifact when
+  it is absent (`RCLINVAR_DUCKDB_V2=no` skips building it).
 - Preserve raw abstract source entity ordinals in `pubmed_literature_sections`
   alongside subsection labels; title sections have a NULL entity ordinal.
 - Keep `release_id` as a required tidy-Parquet column and validate it together

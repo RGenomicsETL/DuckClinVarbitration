@@ -24,12 +24,17 @@ VERSION=`awk -F': *' '/^Version:/ {print $2; exit}' "$ROOT/DESCRIPTION"`
 STAGED="$ROOT/inst/ext"
 CAPI_ROOT="$STAGED/duckdb_capi"
 VERSIONS_FILE="$CAPI_ROOT/versions.txt"
+STABLE_CAPI_FILE="$CAPI_ROOT/stable_capi.txt"
 SOURCE="$STAGED/duckclinvarbitration_extension.c"
-PUBMED_SOURCE="$STAGED/rclinvarbitration_pubmed.c"
+CLINVAR_CORE="$STAGED/rclinvarbitration_clinvar_core.inc"
+PUBMED_CORE="$STAGED/rclinvarbitration_pubmed_core.inc"
+V2_SOURCE="$STAGED/duckclinvarbitration_extension_v2.c"
+V2_CAPI_ROOT="$STAGED/duckdb_capi_v2"
+V2_MANIFEST="$V2_CAPI_ROOT/duckdb_headers.json"
 METADATA="$STAGED/append_extension_metadata.R"
 BUILD_ROOT="$STAGED/build"
 
-for file in "$VERSIONS_FILE" "$SOURCE" "$PUBMED_SOURCE" "$METADATA"; do
+for file in "$VERSIONS_FILE" "$STABLE_CAPI_FILE" "$SOURCE" "$CLINVAR_CORE" "$PUBMED_CORE" "$V2_SOURCE" "$METADATA"; do
   if [ ! -f "$file" ]; then
     echo "ERROR: required native extension file is missing: $file" >&2
     exit 1
@@ -56,6 +61,28 @@ if ! command -v "$PKG_CONFIG_CMD" >/dev/null 2>&1 || \
 fi
 
 SUPPORTED=`sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$VERSIONS_FILE"`
+STABLE_CAPI=`sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$STABLE_CAPI_FILE" | head -1`
+if ! printf '%s\n' "$STABLE_CAPI" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+  echo "ERROR: $STABLE_CAPI_FILE must name one stable C API release such as v1.5.6" >&2
+  exit 1
+fi
+if ! printf '%s\n' "$SUPPORTED" | grep -Fqx "$STABLE_CAPI"; then
+  echo "ERROR: stable C API floor $STABLE_CAPI is not declared in $VERSIONS_FILE" >&2
+  exit 1
+fi
+
+# True when the first semantic version is greater than or equal to the second.
+version_ge() {
+  printf '%s\n%s\n' "$1" "$2" | awk -F'[.v]' '
+    NR == 1 { a1 = $2; a2 = $3; a3 = $4 }
+    NR == 2 { b1 = $2; b2 = $3; b3 = $4 }
+    END {
+      if (a1 != b1) exit !(a1 > b1)
+      if (a2 != b2) exit !(a2 > b2)
+      exit !(a3 >= b3)
+    }'
+}
+
 BUILD_VERSIONS="${RCLINVAR_DUCKDB_VERSIONS:-$SUPPORTED}"
 if [ -z "$BUILD_VERSIONS" ]; then
   echo "ERROR: no DuckDB versions selected" >&2
@@ -67,18 +94,43 @@ for version in $BUILD_VERSIONS; do
     echo "ERROR: DuckDB version '$version' is not declared in $VERSIONS_FILE" >&2
     exit 1
   fi
-  if [ ! -f "$CAPI_ROOT/$version/duckdb.h" ] || \
-    [ ! -f "$CAPI_ROOT/$version/duckdb_extension.h" ] || \
-    [ ! -f "$CAPI_ROOT/$version/duckdb_headers.json" ]; then
-    echo "ERROR: incomplete DuckDB C API headers for $version" >&2
+  HEADER_VERSION="$version"
+  if version_ge "$version" "$STABLE_CAPI"; then
+    # Stable C API artifacts are always compiled from the floor headers and
+    # report the floor as their C API version, so one artifact covers every
+    # engine from the floor up (including the DuckDB v2.0 line).
+    HEADER_VERSION="$STABLE_CAPI"
+  fi
+  if [ ! -f "$CAPI_ROOT/$HEADER_VERSION/duckdb.h" ] || \
+    [ ! -f "$CAPI_ROOT/$HEADER_VERSION/duckdb_extension.h" ] || \
+    [ ! -f "$CAPI_ROOT/$HEADER_VERSION/duckdb_headers.json" ]; then
+    echo "ERROR: incomplete DuckDB C API headers for $version ($HEADER_VERSION)" >&2
     exit 1
   fi
-  pinned=`awk -F'"' '/"duckdb_ref"/ {print $4; exit}' "$CAPI_ROOT/$version/duckdb_headers.json"`
-  if [ "$pinned" != "$version" ]; then
-    echo "ERROR: $CAPI_ROOT/$version metadata records '$pinned', expected '$version'" >&2
+  pinned=`awk -F'"' '/"duckdb_ref"/ {print $4; exit}' "$CAPI_ROOT/$HEADER_VERSION/duckdb_headers.json"`
+  if [ "$pinned" != "$HEADER_VERSION" ]; then
+    echo "ERROR: $CAPI_ROOT/$HEADER_VERSION metadata records '$pinned', expected '$HEADER_VERSION'" >&2
     exit 1
   fi
 done
+
+# DuckDB C API v2 SDK: the optional v2 host is built as a stable C_STRUCT
+# artifact that DuckDB v2.0 and later dispatch to the v2 entrypoint.
+if [ ! -f "$V2_MANIFEST" ]; then
+  echo "ERROR: required DuckDB C API v2 manifest is missing: $V2_MANIFEST" >&2
+  exit 1
+fi
+for file in "$V2_CAPI_ROOT/duckdb_v2.h" "$V2_CAPI_ROOT/duckdb_extension_v2.h"; do
+  if [ ! -f "$file" ]; then
+    echo "ERROR: required DuckDB C API v2 header is missing: $file" >&2
+    exit 1
+  fi
+done
+V2_CAPI_VERSION=`awk -F'"' '/"duckdb_capi_version"/ {print $4; exit}' "$V2_MANIFEST"`
+if ! printf '%s\n' "$V2_CAPI_VERSION" | grep -Eq '^v2\.[0-9]+\.[0-9]+$'; then
+  echo "ERROR: $V2_MANIFEST must declare a v2 C API release such as v2.0.0" >&2
+  exit 1
+fi
 
 CC=`"${R_HOME}/bin/R" CMD config CC | cut -f1 -d' '`
 R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
@@ -117,6 +169,20 @@ else
   esac
 fi
 
+# The v2 host is a separate translation unit linked against the v2 SDK. On
+# macOS the export allowlist must name the v2 entrypoint, not the v1 one.
+V2_SHARED_FLAGS="$SHARED_FLAGS"
+V2_EXPORT_FLAGS="$EXT_EXPORT_FLAGS"
+case "$OS/$ARCH" in
+  Darwin/*) V2_SHARED_FLAGS="${SHARED_FLAGS%_duckclinvarbitration_init_c_api}_duckclinvarbitration_init_c_api_v2" ;;
+esac
+BUILD_V2="${RCLINVAR_DUCKDB_V2:-yes}"
+if [ "$WASM_BUILD" = yes ]; then
+  # webR/duckdb-wasm currently ships an engine that loads the stable v1
+  # artifact, so the v2 host is not needed for the wasm side module.
+  BUILD_V2=no
+fi
+
 rm -rf "$BUILD_ROOT"
 mkdir -p "$BUILD_ROOT"
 if [ "$WASM_BUILD" = yes ]; then
@@ -129,12 +195,21 @@ fi
 
 for DUCKDB_VERSION in $BUILD_VERSIONS; do
   HEADER_DIR="$CAPI_ROOT/$DUCKDB_VERSION"
+  CAPI_VERSION="$DUCKDB_VERSION"
+  ABI_TYPE='C_STRUCT_UNSTABLE'
+  ABI_CPPFLAGS="-DDUCKDB_EXTENSION_API_VERSION_UNSTABLE=$DUCKDB_VERSION -DDUCKDB_EXTENSION_API_UNSTABLE_VERSION=\"$DUCKDB_VERSION\""
+  if version_ge "$DUCKDB_VERSION" "$STABLE_CAPI"; then
+    HEADER_DIR="$CAPI_ROOT/$STABLE_CAPI"
+    CAPI_VERSION="$STABLE_CAPI"
+    ABI_TYPE='C_STRUCT'
+    ABI_CPPFLAGS=''
+  fi
   OUT_DIR="$BUILD_ROOT/$DUCKDB_VERSION"
   RAW="$OUT_DIR/duckclinvarbitration.duckdb_extension.raw"
-  CPPFLAGS="-DNDEBUG -DDUCKDB_EXTENSION_NAME=duckclinvarbitration -DDUCKDB_EXTENSION_API_VERSION_UNSTABLE=$DUCKDB_VERSION -DDUCKDB_EXTENSION_API_UNSTABLE_VERSION=\"$DUCKDB_VERSION\" -I$HEADER_DIR $XML_CFLAGS $ZLIB_CFLAGS"
+  CPPFLAGS="-DNDEBUG -DDUCKDB_EXTENSION_NAME=duckclinvarbitration $ABI_CPPFLAGS -I$HEADER_DIR $XML_CFLAGS $ZLIB_CFLAGS"
   mkdir -p "$OUT_DIR"
 
-  echo "Building RClinVarbitration extension for DuckDB $DUCKDB_VERSION..."
+  echo "Building RClinVarbitration extension for DuckDB $DUCKDB_VERSION ($ABI_TYPE $CAPI_VERSION)..."
   "$CC" $SHARED_FLAGS $CFLAGS $CPPFLAGS $R_LDFLAGS $CONFIGURE_LDFLAGS \
     -o "$RAW" $EXT_EXPORT_FLAGS "$SOURCE" $XML_LIBS $ZLIB_LIBS
   for METADATA_PLATFORM in $PLATFORMS; do
@@ -146,11 +221,39 @@ for DUCKDB_VERSION in $BUILD_VERSIONS; do
       --out-file "$FINAL" \
       --extension-name duckclinvarbitration \
       --duckdb-platform "$METADATA_PLATFORM" \
-      --duckdb-version "$DUCKDB_VERSION" \
+      --duckdb-version "$CAPI_VERSION" \
       --extension-version "$VERSION" \
-      --abi-type C_STRUCT_UNSTABLE
+      --abi-type "$ABI_TYPE"
   done
   rm -f "$RAW"
 done
 
+if [ "$BUILD_V2" = yes ]; then
+  OUT_DIR="$BUILD_ROOT/$V2_CAPI_VERSION"
+  RAW="$OUT_DIR/duckclinvarbitration.duckdb_extension.raw"
+  CPPFLAGS="-DNDEBUG -DDUCKDB_EXTENSION_NAME=duckclinvarbitration -I$V2_CAPI_ROOT $XML_CFLAGS $ZLIB_CFLAGS"
+  mkdir -p "$OUT_DIR"
+
+  echo "Building RClinVarbitration extension for DuckDB $V2_CAPI_VERSION (C_STRUCT $V2_CAPI_VERSION v2 host)..."
+  "$CC" $V2_SHARED_FLAGS $CFLAGS $CPPFLAGS $R_LDFLAGS $CONFIGURE_LDFLAGS \
+    -o "$RAW" $V2_EXPORT_FLAGS "$V2_SOURCE" $XML_LIBS $ZLIB_LIBS
+  for METADATA_PLATFORM in $PLATFORMS; do
+    PLATFORM_DIR="$OUT_DIR/$METADATA_PLATFORM"
+    FINAL="$PLATFORM_DIR/duckclinvarbitration.duckdb_extension"
+    mkdir -p "$PLATFORM_DIR"
+    "${R_HOME}/bin/Rscript" "$METADATA" \
+      --library-file "$RAW" \
+      --out-file "$FINAL" \
+      --extension-name duckclinvarbitration \
+      --duckdb-platform "$METADATA_PLATFORM" \
+      --duckdb-version "$V2_CAPI_VERSION" \
+      --extension-version "$VERSION" \
+      --abi-type 'C_STRUCT'
+  done
+  rm -f "$RAW"
+fi
+
 echo "Built RClinVarbitration artifacts for: $BUILD_VERSIONS"
+if [ "$BUILD_V2" = yes ]; then
+  echo "Added the DuckDB C API v2 host artifact for: $V2_CAPI_VERSION"
+fi
