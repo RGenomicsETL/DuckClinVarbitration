@@ -14,9 +14,11 @@ tracking.
 VCV XML import remains available when an analysis needs source
 observations, citations, or text that the flat reports do not carry.
 
-The package bundles exact-version DuckDB extensions for DuckDB `v1.5.0`
-through `v1.5.5`. Connections must allow locally built unsigned
-extensions.
+The package bundles DuckDB extensions for DuckDB `v1.5.0` through
+`v1.5.6`. The `v1.5.6` artifact uses DuckDB’s stable C API, so the same
+artifact also loads on the DuckDB `v2.0` line. For DuckDB `v2.0` and
+later the package also ships a dedicated stable C API v2 host, which it
+prefers. Connections must allow locally built unsigned extensions.
 
 ## Installation and platforms
 
